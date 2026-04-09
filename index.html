@@ -697,6 +697,7 @@ let factors = [
 
   // Macro
   { id: 'fed', name: 'Fed政策预期', sub: 'PCE上调至2.7%·维持3.5-3.75%·4/28-29 FOMC', group: 'macro', score: -1, weight: 8, note: 'Fed维持利率不变，PCE和核心PCE预期上调至2.7%，今年仅暗示降息一次但时点不明' },
+  { id: 'fed_chair', name: '联储换届·沃士新政', sub: '5/15就任·降息至3%+主动抛MBS·"QT换降息"框架', group: 'macro', score: -2, weight: 9, note: '沃士(Warsh)5月15日接替鲍威尔。政策框架："QT-for-cuts"—降短端利率至3%，同时主动抛售$2T MBS缩表。熊市陡峭化已启动：短端降/长端升，压制成长股估值。历届换届后美股均现阶段性下跌（共性：政策不确定性折价+新主席建立公信力偏鹰）。沃士额外风险：大幅减少前瞻指引沟通，市场失去"锚"。受压板块：房地产/REITs/成长股；受益：银行（利差扩大）' },
   { id: 'earnings', name: 'Q1财报季', sub: 'Q1 GDP约+3%·下周财报季开启·历史对应EPS双位数增长', group: 'macro', score: 1, weight: 7, note: 'Q4 GDP终值下修至0.5%但Q1估约+3%，初请失业金21万韧性，财报季是近期关键催化剂' },
   { id: 'oil_price', name: '油价走向', sub: 'WTI $99-101(+3-7%)·停火脆弱=更高平台波动', group: 'macro', score: -2, weight: 7, note: '停火后油价从$94反弹至$99+，GS Pasquariello：大宗商品围绕更高平台波动；高油价是通胀和经济的持续逆风' },
   { id: 'recession', name: '衰退概率', sub: 'Q1 GDP~+3%·劳动力韧性·消费者信心深度受损', group: 'macro', score: 0, weight: 6, note: '劳动力市场仍韧性（4周均值20.95万），但日本/英国/德国消费者信心均创近年低，DB指出1973年重演条件不成立' },
@@ -1682,7 +1683,7 @@ const historicalData = [
   { date: '2026-04-06', score: 52, spx: 6700, event: 'Wilson见底判断 · CTA $1480B就绪 · 21份研报偏多' },
   { date: '2026-04-07', score: 58, spx: 6783, event: '阿克曼$640亿收UMG · ETF空头COVID以来最高 · GS科技PEG 0.7-0.9x' },
   { date: '2026-04-08', score: 65, spx: 6950, event: '★ 停火达成 · SPX+2.5% · VIX→20 · 油跌16% · 降息概率14→43%' },
-  { date: '2026-04-09', score: 59, spx: 6785, event: '停火裂痕·霍尔木兹仅4艘油轮·WTI反弹$99·周六美伊伊斯兰堡直接谈判·CTA买入$340亿/周待触发' }
+  { date: '2026-04-09', score: 58, spx: 6785, event: '停火裂痕·霍尔木兹仅4艘油轮·WTI反弹$99·周六美伊伊斯兰堡直接谈判·CTA买入$340亿/周待触发·新增沃士换届因素' }
 ];
 
 

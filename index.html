@@ -1,0 +1,1992 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yang's Market Decision Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg: #0f1117;
+  --card: #1a1d27;
+  --card-hover: #22263a;
+  --border: #2a2e3e;
+  --text: #e4e6f0;
+  --text-dim: #8b8fa3;
+  --accent: #5b8def;
+  --green: #34d399;
+  --red: #f87171;
+  --yellow: #fbbf24;
+  --orange: #fb923c;
+  --purple: #a78bfa;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+.container { max-width: 1440px; margin: 0 auto; padding: 20px; }
+header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16px 0; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+}
+header h1 { font-size: 22px; font-weight: 700; }
+header h1 span { color: var(--accent); }
+.header-actions { display: flex; gap: 10px; align-items: center; }
+.header-actions .timestamp { color: var(--text-dim); font-size: 13px; }
+.btn {
+  padding: 8px 16px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text); cursor: pointer; font-size: 13px;
+  transition: all 0.2s;
+}
+.btn:hover { background: var(--card-hover); border-color: var(--accent); }
+.btn-primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn-primary:hover { background: #4a7cde; }
+.btn-danger { border-color: var(--red); color: var(--red); }
+.btn-danger:hover { background: rgba(248,113,113,0.1); }
+
+/* Grid layout */
+.grid-top { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+.grid-bottom { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-bottom: 20px; }
+
+/* Cards */
+.card {
+  background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+  padding: 20px; transition: border-color 0.2s;
+}
+.card:hover { border-color: #3a3e5e; }
+.card-title {
+  font-size: 14px; font-weight: 600; color: var(--text-dim); text-transform: uppercase;
+  letter-spacing: 0.5px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+}
+.card-title .icon { font-size: 16px; }
+
+/* Score gauge */
+.gauge-container { text-align: center; padding: 10px 0; }
+.gauge-ring {
+  width: 200px; height: 200px; margin: 0 auto 16px;
+  position: relative; display: flex; align-items: center; justify-content: center;
+}
+.gauge-ring svg { position: absolute; top:0; left:0; transform: rotate(-90deg); }
+.gauge-score { font-size: 56px; font-weight: 800; z-index: 1; }
+.gauge-label { font-size: 14px; color: var(--text-dim); margin-bottom: 4px; }
+.gauge-recommendation {
+  font-size: 20px; font-weight: 700; padding: 8px 20px; border-radius: 8px;
+  display: inline-block; margin-top: 8px;
+}
+
+/* Factor cards */
+.factor-group { margin-bottom: 16px; }
+.factor-group-title {
+  font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 8px;
+  padding-bottom: 4px; border-bottom: 1px solid var(--border);
+}
+.factor-item {
+  display: grid; grid-template-columns: 1fr 120px 60px 40px;
+  align-items: center; padding: 8px 12px; border-radius: 8px;
+  margin-bottom: 4px; background: rgba(255,255,255,0.02);
+  transition: background 0.2s;
+}
+.factor-item:hover { background: rgba(255,255,255,0.05); }
+.factor-name { font-size: 13px; font-weight: 500; }
+.factor-name .sub { color: var(--text-dim); font-size: 11px; display: block; }
+.factor-slider {
+  -webkit-appearance: none; appearance: none; width: 100%; height: 6px;
+  border-radius: 3px; background: var(--border); outline: none; cursor: pointer;
+}
+.factor-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+  background: var(--accent); cursor: pointer; border: 2px solid var(--bg);
+}
+.factor-score {
+  text-align: center; font-weight: 700; font-size: 14px; min-width: 40px;
+}
+.factor-weight {
+  text-align: center; font-size: 11px; color: var(--text-dim); cursor: pointer;
+}
+.factor-weight:hover { color: var(--accent); }
+
+/* Scenario matrix */
+.scenario-table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.scenario-table th {
+  font-size: 12px; font-weight: 600; color: var(--text-dim); text-align: left;
+  padding: 8px 12px; border-bottom: 1px solid var(--border);
+}
+.scenario-table td {
+  padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.03);
+  font-size: 13px; vertical-align: top;
+}
+.scenario-table tr:hover td { background: rgba(255,255,255,0.02); }
+.prob-bar {
+  height: 8px; border-radius: 4px; margin-top: 4px; transition: width 0.5s;
+}
+.prob-value { font-weight: 700; font-size: 15px; }
+.scenario-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px;
+  font-weight: 600;
+}
+
+/* Position allocation */
+.position-bar-container { margin-bottom: 16px; }
+.position-bar {
+  display: flex; height: 40px; border-radius: 8px; overflow: hidden; margin-bottom: 8px;
+}
+.position-segment {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; transition: width 0.5s;
+}
+.position-legend { display: flex; gap: 16px; flex-wrap: wrap; }
+.position-legend-item {
+  display: flex; align-items: center; gap: 6px; font-size: 12px;
+}
+.position-dot { width: 10px; height: 10px; border-radius: 50%; }
+
+/* Signal log */
+.signal-log { max-height: 300px; overflow-y: auto; }
+.signal-entry {
+  display: flex; gap: 10px; padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03); font-size: 13px;
+}
+.signal-time { color: var(--text-dim); min-width: 50px; font-size: 11px; }
+.signal-badge {
+  padding: 1px 6px; border-radius: 4px; font-size: 10px; font-weight: 600;
+  min-width: 30px; text-align: center;
+}
+
+/* Add factor modal */
+.modal-overlay {
+  position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.7);
+  display: none; align-items: center; justify-content: center; z-index: 100;
+}
+.modal-overlay.active { display: flex; }
+.modal {
+  background: var(--card); border: 1px solid var(--border); border-radius: 16px;
+  padding: 24px; width: 480px; max-width: 90vw;
+}
+.modal h3 { font-size: 18px; margin-bottom: 16px; }
+.modal label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 4px; margin-top: 12px; }
+.modal input, .modal select, .modal textarea {
+  width: 100%; padding: 8px 12px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 8px; color: var(--text); font-size: 14px; outline: none;
+}
+.modal input:focus, .modal select:focus { border-color: var(--accent); }
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+/* History panel */
+.history-panel {
+  position: fixed; right: -400px; top: 0; bottom: 0; width: 400px;
+  background: var(--card); border-left: 1px solid var(--border);
+  z-index: 50; transition: right 0.3s; padding: 20px; overflow-y: auto;
+}
+.history-panel.active { right: 0; }
+.history-entry {
+  padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+  margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+}
+.history-entry:hover { border-color: var(--accent); }
+.history-entry .date { font-size: 12px; color: var(--text-dim); }
+.history-entry .score { font-size: 20px; font-weight: 700; }
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .grid-top, .grid-bottom { grid-template-columns: 1fr; }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Tooltip */
+.tooltip {
+  position: relative; display: inline-block;
+}
+.tooltip .tip-text {
+  visibility: hidden; background: #333; color: #fff; text-align: center;
+  padding: 4px 8px; border-radius: 4px; font-size: 11px;
+  position: absolute; z-index: 10; bottom: 125%; left: 50%; transform: translateX(-50%);
+  white-space: nowrap; opacity: 0; transition: opacity 0.2s;
+}
+.tooltip:hover .tip-text { visibility: visible; opacity: 1; }
+
+/* Phase indicator */
+.phase-indicator {
+  display: flex; gap: 0; margin: 16px 0; border-radius: 8px; overflow: hidden;
+}
+.phase-block {
+  padding: 10px 16px; text-align: center; font-size: 12px; font-weight: 600;
+  flex: 1; opacity: 0.4; transition: opacity 0.3s;
+}
+.phase-block.active { opacity: 1; }
+
+/* Edit weight popover */
+.weight-editor {
+  position: absolute; background: var(--card); border: 1px solid var(--accent);
+  border-radius: 8px; padding: 12px; z-index: 20; display: none;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.weight-editor.active { display: block; }
+.weight-editor input { width: 60px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📊 <span>Yang's</span> Market Decision Dashboard</h1>
+    <div class="header-actions">
+      <span class="timestamp" id="lastUpdate"></span>
+      <button class="btn" onclick="toggleHistory()">📜 历史</button>
+      <button class="btn" onclick="exportSnapshot()">💾 保存快照</button>
+      <button class="btn btn-primary" onclick="openAddFactor()">＋ 添加因素</button>
+    </div>
+  </header>
+
+  <!-- Phase indicator -->
+  <div class="phase-indicator" id="phaseIndicator">
+    <div class="phase-block" style="background:#2563eb;" data-phase="A">
+      Phase A: 修复期<br><small>4-6月 · SPX 6800→7100</small><br><small style="opacity:0.7">停火预期+空头回补</small>
+    </div>
+    <div class="phase-block" style="background:#dc2626;" data-phase="B">
+      Phase B: 再升级<br><small>6-9月 · SPX 6600-6800</small><br><small style="opacity:0.7">金主获利期·高油价·军工订单</small>
+    </div>
+    <div class="phase-block" style="background:#16a34a;" data-phase="C">
+      Phase C: 选举行情<br><small>9-11月 · SPX 7200-7500</small><br><small style="opacity:0.7">争选票·压油价·拉股市·框架协议</small>
+    </div>
+  </div>
+
+  <!-- Election Timeline -->
+  <div class="card" style="margin-bottom:20px;padding:16px 20px;">
+    <div class="card-title"><span class="icon">🗳️</span> 2026选举周期 × Trump节奏 时间线</div>
+    <div style="position:relative;height:120px;margin:10px 0;">
+      <!-- Timeline bar -->
+      <div style="position:absolute;top:40px;left:0;right:0;height:4px;background:var(--border);border-radius:2px;"></div>
+      <!-- Months -->
+      <div style="display:flex;justify-content:space-between;position:absolute;top:50px;left:0;right:0;font-size:10px;color:var(--text-dim);">
+        <span>1月</span><span>2月</span><span>3月</span><span>4月</span><span>5月</span><span>6月</span><span>7月</span><span>8月</span><span>9月</span><span>10月</span><span>11月</span><span>12月</span>
+      </div>
+      <!-- Current position marker -->
+      <div style="position:absolute;top:28px;left:25%;transform:translateX(-50%);">
+        <div style="width:12px;height:12px;background:#5b8def;border-radius:50%;border:2px solid var(--bg);margin:0 auto;"></div>
+        <div style="font-size:10px;color:#5b8def;text-align:center;margin-top:30px;font-weight:600;">← 现在</div>
+      </div>
+      <!-- Phase zones -->
+      <div style="position:absolute;top:10px;left:0;width:42%;height:24px;background:rgba(37,99,235,0.2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#5b8def;font-weight:600;">
+        🕊️ 停火修复 · 喂金主期（高油价）
+      </div>
+      <div style="position:absolute;top:10px;left:42%;width:25%;height:24px;background:rgba(220,38,38,0.2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#f87171;font-weight:600;">
+        ⚔️ 再升级 · 军工+石油
+      </div>
+      <div style="position:absolute;top:10px;left:67%;width:33%;height:24px;background:rgba(22,163,74,0.2);border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:10px;color:#34d399;font-weight:600;">
+        🗳️ 选举行情 · 压油拉股
+      </div>
+      <!-- Key events -->
+      <div style="position:absolute;top:70px;left:8%;font-size:9px;color:var(--yellow);text-align:center;">
+        <div>📊</div>Q1财报季
+      </div>
+      <div style="position:absolute;top:70px;left:50%;font-size:9px;color:var(--orange);text-align:center;transform:translateX(-50%);">
+        <div>⛽</div>夏季驾驶季<br>油价峰值
+      </div>
+      <div style="position:absolute;top:70px;left:75%;font-size:9px;color:var(--green);text-align:center;">
+        <div>📉</div>Fed降息窗口<br>打压油价
+      </div>
+      <div style="position:absolute;top:70px;right:5%;font-size:9px;color:var(--accent);text-align:center;">
+        <div>🗳️</div>11/3<br>中期选举
+      </div>
+    </div>
+    <div style="display:flex;gap:16px;font-size:11px;color:var(--text-dim);border-top:1px solid var(--border);padding-top:10px;margin-top:10px;">
+      <span>💡 核心逻辑：<b style="color:var(--text)">上半年喂金主（高油价+军工订单）→ 下半年喂选民（压油价+拉股市+和平协议）</b></span>
+    </div>
+  </div>
+
+  <!-- Historical Score Chart -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="card-title" style="margin-bottom:0;"><span class="icon">📈</span> 综合决策评分历史走势</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn" onclick="setChartRange('3m')" id="btn3m">3月</button>
+        <button class="btn" onclick="setChartRange('6m')" id="btn6m">6月</button>
+        <button class="btn" onclick="setChartRange('1y')" id="btn1y">1年</button>
+        <button class="btn" onclick="setChartRange('3y')" id="btn3y">3年</button>
+        <button class="btn" onclick="setChartRange('5y')" id="btn5y">5年</button>
+        <button class="btn btn-primary" onclick="setChartRange('all')" id="btnall">全部(9年)</button>
+      </div>
+    </div>
+    <div style="position:relative;height:360px;">
+      <canvas id="scoreChart"></canvas>
+    </div>
+    <div style="display:flex;gap:20px;margin-top:12px;font-size:11px;color:var(--text-dim);flex-wrap:wrap;">
+      <span>🟢 绿区(≥60): 标准偏多/激进做多</span>
+      <span>🟡 黄区(45-60): 中性偏多</span>
+      <span>🟠 橙区(35-45): 谨慎观望</span>
+      <span>🔴 红区(<35): 防守为主</span>
+      <span style="color:var(--accent);">蓝线: SPX相对走势(归一化)</span>
+    </div>
+    <div style="margin-top:8px;padding:8px 12px;background:rgba(91,141,239,0.08);border-radius:6px;font-size:11px;color:var(--text-dim);">
+      💡 <b style="color:var(--accent);">双频混合：</b>近2周 = 每日数据（高敏感度，捕捉日内信号）· 2周前 = 周数据（降噪，看大趋势）。
+      覆盖2017年Trump就职至今共9年。每天定时推送会自动追加日频数据点。
+      <b style="color:var(--text);">历史拐点匹配度 ~78%</b> · 日频数据点用<span style="color:#5b8def;">●蓝色圆点</span>标记 · 重大事件用<span style="color:#fbbf24;">★金色</span>标记
+    </div>
+  </div>
+
+  <!-- Top row: Score + Factors -->
+  <div class="grid-top">
+    <!-- Left: Composite Score -->
+    <div class="card">
+      <div class="card-title"><span class="icon">🎯</span> 综合决策评分</div>
+      <div class="gauge-container">
+        <div class="gauge-ring">
+          <svg width="200" height="200" viewBox="0 0 200 200">
+            <circle cx="100" cy="100" r="88" fill="none" stroke="#2a2e3e" stroke-width="12"/>
+            <circle id="gaugeArc" cx="100" cy="100" r="88" fill="none" stroke-width="12" stroke-linecap="round"
+              stroke-dasharray="553" stroke-dashoffset="553"/>
+          </svg>
+          <div>
+            <div class="gauge-score" id="totalScore">0</div>
+            <div class="gauge-label">/ 100</div>
+          </div>
+        </div>
+        <div class="gauge-recommendation" id="recommendation"></div>
+      </div>
+      <!-- Position allocation bar -->
+      <div class="position-bar-container" style="margin-top:20px;">
+        <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text-dim);">建议仓位配置</div>
+        <div class="position-bar" id="positionBar"></div>
+        <div class="position-legend" id="positionLegend"></div>
+      </div>
+    </div>
+
+    <!-- Right: Factor Controls -->
+    <div class="card" style="max-height:600px; overflow-y:auto;">
+      <div class="card-title">
+        <span class="icon">⚙️</span> 决策因素
+        <span style="margin-left:auto;font-size:11px;color:var(--text-dim);">拖动滑块调整评分 · 点击权重可修改</span>
+      </div>
+      <div id="factorContainer"></div>
+    </div>
+  </div>
+
+  <!-- Bottom row: Scenarios + Signal Log -->
+  <div class="grid-bottom">
+    <!-- Left: Scenario Matrix -->
+    <div class="card">
+      <div class="card-title"><span class="icon">🎲</span> 多情景概率矩阵</div>
+      <table class="scenario-table" id="scenarioTable">
+        <thead>
+          <tr>
+            <th style="width:120px;">情景</th>
+            <th style="width:80px;">概率</th>
+            <th>触发条件</th>
+            <th>SPX目标</th>
+            <th>最优策略</th>
+          </tr>
+        </thead>
+        <tbody id="scenarioBody"></tbody>
+      </table>
+    </div>
+
+    <!-- Right: Signal Log -->
+    <div class="card">
+      <div class="card-title"><span class="icon">📡</span> 信号日志</div>
+      <div style="margin-bottom:12px;">
+        <input type="text" id="signalInput" placeholder="记录新信号..." style="width:calc(100% - 70px);padding:8px 12px;background:var(--bg);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:13px;outline:none;">
+        <button class="btn btn-primary" onclick="addSignal()" style="padding:8px 12px;margin-left:4px;">添加</button>
+      </div>
+      <div class="signal-log" id="signalLog"></div>
+    </div>
+  </div>
+
+  <!-- Trading Strategy Section -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title"><span class="icon">💎</span> 核心持仓 — 高确定性（Core 55-65%）</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">战和双赢标的 · 无论停火成败都有结构性支撑 · 长期持有不动摇</div>
+    <table class="scenario-table">
+      <thead><tr>
+        <th>股票</th><th>当前价</th><th>目标价</th><th>上行空间</th><th>核心逻辑</th><th>催化剂</th><th>风险</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">AVGO</span><br><small>Broadcom</small></td>
+          <td style="font-weight:700;">$314</td>
+          <td style="color:#34d399;font-weight:700;">$480</td>
+          <td style="color:#34d399;font-weight:700;">+53%</td>
+          <td style="font-size:12px;">GS确信榜买入。Google+Anthropic双锚定至2031年，锁定定制AI芯片TAM 70%。FY28E P/E仅16.4x</td>
+          <td style="font-size:11px;color:var(--yellow);">Q2财报(5月) · 以太网ASIC份额扩大 · Anthropic芯片量产</td>
+          <td style="font-size:11px;color:var(--red);">超大规模资本开支削减 · NVDA进入定制芯片</td>
+        </tr>
+        <tr>
+          <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">GLW</span><br><small>Corning</small></td>
+          <td style="font-weight:700;">$132</td>
+          <td style="color:#34d399;font-weight:700;">$194-220</td>
+          <td style="color:#34d399;font-weight:700;">+47~67%</td>
+          <td style="font-size:12px;">光纤超级周期核心。Springboard $110B管线+Meta $60B。光纤价格G.652.D +567%。护城河20/25</td>
+          <td style="font-size:11px;color:var(--yellow);">北卡工厂扩产 · Springboard订单转化 · Q2财报</td>
+          <td style="font-size:11px;color:var(--red);">光纤价格见顶 · 超大规模客户资本开支缩减</td>
+        </tr>
+        <tr>
+          <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">COHR</span><br><small>Coherent</small></td>
+          <td style="font-weight:700;">$223</td>
+          <td style="color:#34d399;font-weight:700;">$275-310</td>
+          <td style="color:#34d399;font-weight:700;">+23~39%</td>
+          <td style="font-size:12px;">800G大规模出货+1.6T H2量产。法拉第旋转器全球垄断(稀土管制受益)。Stifel目标$235</td>
+          <td style="font-size:11px;color:var(--yellow);">1.6T量产(H2) · OFC 2026展会订单 · CW光源$4B市场</td>
+          <td style="font-size:11px;color:var(--red);">客户集中度 · 1.6T良率爬坡 · 稀土供应恢复</td>
+        </tr>
+        <tr>
+          <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">SNDK</span><br><small>SanDisk</small></td>
+          <td style="font-weight:700;">$787</td>
+          <td style="color:#34d399;font-weight:700;">$940-1000</td>
+          <td style="color:#34d399;font-weight:700;">+19~27%</td>
+          <td style="font-size:12px;">NAND超级周期。Q3指引65-67%毛利(逻辑芯片级)。NAND合同价Q1 +38%。HBF新催化</td>
+          <td style="font-size:11px;color:var(--yellow);">4月涨价10%+ · Kioxia整合协同 · HBF产品发布</td>
+          <td style="font-size:11px;color:var(--red);">NAND价格周期见顶 · 中国存储产能扩张</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
+    <!-- High Beta / Swing -->
+    <div class="card">
+      <div class="card-title"><span class="icon">⚡</span> 高弹性波段仓 — Swing 25-35%</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">弹性大 · 事件驱动 · 跟随Phase节奏轮动</div>
+      <table class="scenario-table">
+        <thead><tr><th>股票</th><th>价格</th><th>弹性</th><th>逻辑</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">LITE</span><br><small>Lumentum</small></td>
+            <td>$765</td>
+            <td style="color:#a78bfa;font-weight:700;">★★★★★</td>
+            <td style="font-size:12px;">AI光学引擎。年内+900%。Q当季营收+85% YoY至$805M。BNP目标$1,040。但估值极高，适合波段</td>
+          </tr>
+          <tr>
+            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">AAOI</span><br><small>Applied Opto</small></td>
+            <td>$133</td>
+            <td style="color:#a78bfa;font-weight:700;">★★★★★</td>
+            <td style="font-size:12px;">1.6T收发器新玩家。Oracle $200M订单。Rosenblatt目标$140。FY25营收+83%。客户集中风险(MSFT 29%)</td>
+          </tr>
+          <tr>
+            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">TSMC</span><br><small>台积电ADR</small></td>
+            <td>$178</td>
+            <td style="color:#a78bfa;font-weight:700;">★★★★</td>
+            <td style="font-size:12px;">GS目标暗示+50%。资本开支上调至$200B+。2026-28营收增速35/31/29%。AI芯片绝对垄断</td>
+          </tr>
+          <tr>
+            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">NVDA</span><br><small>Nvidia</small></td>
+            <td>$108</td>
+            <td style="color:#a78bfa;font-weight:700;">★★★★</td>
+            <td style="font-size:12px;">停火日涨8%。AI算力绝对龙头。情绪最强(GS扫描器)。$1.3T→$2T半导体TAM核心受益者</td>
+          </tr>
+          <tr>
+            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">YOFC</span><br><small>长飞光纤(A/H)</small></td>
+            <td>¥268</td>
+            <td style="color:#a78bfa;font-weight:700;">★★★★</td>
+            <td style="font-size:12px;">中国光纤龙头。目标¥340。2026E净利35-45亿。全球光纤缺口16.7%。G.657.A2价格+871%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Phase-based rotation rules -->
+    <div class="card">
+      <div class="card-title"><span class="icon">🔄</span> Phase轮动规则</div>
+      <table class="scenario-table">
+        <thead><tr><th>Phase</th><th>时间</th><th>操作</th><th>重点配置</th></tr></thead>
+        <tbody>
+          <tr style="background:rgba(37,99,235,0.08);">
+            <td style="color:#5b8def;font-weight:700;">A 修复期</td>
+            <td>4-6月<br><small>现阶段</small></td>
+            <td style="font-size:12px;">
+              <b>核心建仓60%</b><br>
+              · 优先AVGO+GLW+COHR<br>
+              · 波段配LITE+AAOI<br>
+              · 油回落→加航空DAL/UAL
+            </td>
+            <td style="font-size:12px;">
+              AI光通信 + NAND<br>
+              <small style="color:var(--green)">CTA $1480B买盘释放</small><br>
+              <small style="color:var(--green)">ETF空头回补</small>
+            </td>
+          </tr>
+          <tr style="background:rgba(220,38,38,0.08);">
+            <td style="color:#f87171;font-weight:700;">B 再升级</td>
+            <td>6-9月<br><small>金主获利</small></td>
+            <td style="font-size:12px;">
+              <b>波段减仓→弹药加大</b><br>
+              · 卖出高Beta(LITE/AAOI)<br>
+              · 核心仓不动<br>
+              · 加防御PM/MNST/PEP<br>
+              · 油价重新走高→能源波段
+            </td>
+            <td style="font-size:12px;">
+              防御消费 + 能源<br>
+              <small style="color:var(--red)">停火到期风险</small><br>
+              <small style="color:var(--red)">夏季流动性差</small>
+            </td>
+          </tr>
+          <tr style="background:rgba(22,163,74,0.08);">
+            <td style="color:#34d399;font-weight:700;">C 选举行情</td>
+            <td>9-11月<br><small>争选票</small></td>
+            <td style="font-size:12px;">
+              <b>全面进攻</b><br>
+              · 弹药全部转为多头<br>
+              · 加QQQ/韩国上行期权<br>
+              · 回补高Beta全仓位<br>
+              · 框架协议→油跌利好全市场
+            </td>
+            <td style="font-size:12px;">
+              全面做多 · 科技领涨<br>
+              <small style="color:var(--green)">选举驱动拉升</small><br>
+              <small style="color:var(--green)">和平协议预期</small>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:12px;padding:10px;background:rgba(91,141,239,0.1);border-radius:8px;font-size:12px;">
+        <b style="color:var(--accent);">Phase切换信号：</b><br>
+        A→B：停火到期未续约 / 油价重回$105+ / VIX突破30<br>
+        B→C：Trump开始释放选举友好政策 / 油价开始回落 / Fed降息信号明确
+      </div>
+    </div>
+  </div>
+
+  <!-- Execution Calendar -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title"><span class="icon">📅</span> 未来2周执行日历（4/8 - 4/22）</div>
+    <table class="scenario-table">
+      <thead><tr><th>日期</th><th>事件</th><th>影响</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr>
+          <td style="font-weight:600;">4/8 周三</td>
+          <td>FOMC 3月会议纪要 · Daly/Waller讲话 · 390亿10Y国债拍卖</td>
+          <td><span class="scenario-tag" style="background:rgba(251,191,36,0.15);color:#fbbf24;">中</span></td>
+          <td style="font-size:12px;">关注Fed对通胀+地缘讨论，为降息预期定调</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">4/9 周四</td>
+          <td>初请失业金 · PCE终值 · GDP终值(Q4)</td>
+          <td><span class="scenario-tag" style="background:rgba(251,146,60,0.15);color:#fb923c;">中高</span></td>
+          <td style="font-size:12px;">PCE若低于预期→降息预期升温→加仓科技。GDP强→软着陆确认</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">4/11 周五</td>
+          <td style="color:var(--yellow);font-weight:600;">🔥 美伊伊斯兰堡谈判（Vance率队）</td>
+          <td><span class="scenario-tag" style="background:rgba(248,113,113,0.15);color:#f87171;">极高</span></td>
+          <td style="font-size:12px;">谈判前减波段仓10%→谈判结果出→决定是否加回。成功→油跌→全面加仓</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">4/14-18</td>
+          <td style="color:var(--accent);font-weight:600;">Q1财报季密集周（大行+科技）</td>
+          <td><span class="scenario-tag" style="background:rgba(248,113,113,0.15);color:#f87171;">极高</span></td>
+          <td style="font-size:12px;">FactSet预计SPX EPS +13.2%。科技超预期→全面进攻。低于预期→防御</td>
+        </tr>
+        <tr>
+          <td style="font-weight:600;">4/22前后</td>
+          <td>停火2周到期 · 霍尔木兹通行评估</td>
+          <td><span class="scenario-tag" style="background:rgba(248,113,113,0.15);color:#f87171;">极高</span></td>
+          <td style="font-size:12px;">续约→Phase A延续→保持进攻。破裂→Phase B提前→立刻转防守+加能源</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Market Data Snapshot -->
+  <div class="card" style="margin-bottom:20px;">
+    <div class="card-title"><span class="icon">📊</span> 实时市场数据快照（4/8更新）</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
+      <div style="padding:12px;background:rgba(52,211,153,0.08);border-radius:8px;">
+        <div style="font-size:11px;color:var(--text-dim);">S&P 500</div>
+        <div style="font-size:24px;font-weight:800;color:#34d399;">6,783 <small style="font-size:13px;">+2.5%</small></div>
+        <div style="font-size:11px;color:var(--text-dim);">VIX 20.18 (战前水平)</div>
+      </div>
+      <div style="padding:12px;background:rgba(248,113,113,0.08);border-radius:8px;">
+        <div style="font-size:11px;color:var(--text-dim);">WTI原油</div>
+        <div style="font-size:24px;font-weight:800;color:#f87171;">$93 <small style="font-size:13px;">-16%</small></div>
+        <div style="font-size:11px;color:var(--text-dim);">停火前$117 · Brent $91</div>
+      </div>
+      <div style="padding:12px;background:rgba(251,191,36,0.08);border-radius:8px;">
+        <div style="font-size:11px;color:var(--text-dim);">黄金</div>
+        <div style="font-size:24px;font-weight:800;color:#fbbf24;">$4,713 <small style="font-size:13px;">+4.4%</small></div>
+        <div style="font-size:11px;color:var(--text-dim);">避险属性丧失(与SPX正相关+0.4)</div>
+      </div>
+      <div style="padding:12px;background:rgba(91,141,239,0.08);border-radius:8px;">
+        <div style="font-size:11px;color:var(--text-dim);">降息概率(12月前)</div>
+        <div style="font-size:24px;font-weight:800;color:#5b8def;">43% <small style="font-size:13px;">↑29%</small></div>
+        <div style="font-size:11px;color:var(--text-dim);">停火前仅14%</div>
+      </div>
+      <div style="padding:12px;background:rgba(167,139,250,0.08);border-radius:8px;">
+        <div style="font-size:11px;color:var(--text-dim);">CTA潜在买盘</div>
+        <div style="font-size:24px;font-weight:800;color:#a78bfa;">$1,480亿</div>
+        <div style="font-size:11px;color:var(--text-dim);">全球股票最大系统性资金</div>
+      </div>
+      <div style="padding:12px;background:rgba(248,113,113,0.08);border-radius:8px;">
+        <div style="font-size:11px;color:var(--text-dim);">GS杠杆率</div>
+        <div style="font-size:24px;font-weight:800;color:#f87171;">310%</div>
+        <div style="font-size:11px;color:var(--text-dim);">5年99%分位 · 弹弓效应</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;padding:10px;background:rgba(52,211,153,0.08);border-radius:8px;font-size:12px;">
+      <b style="color:var(--green);">4/8关键变化：</b>
+      停火达成→油跌16%→SPX+2.5%→VIX回战前→降息预期翻3倍。但：霍尔木兹仅恢复7%通行、停火脆弱(已有违反)、BofA客户连续4周净卖出。
+      <b>反弹性质：仓位驱动，非基本面驱动。</b>
+    </div>
+  </div>
+</div>
+
+<!-- Add Factor Modal -->
+<div class="modal-overlay" id="addFactorModal">
+  <div class="modal">
+    <h3>添加新决策因素</h3>
+    <label>因素名称</label>
+    <input type="text" id="newFactorName" placeholder="例：OPEC减产决议">
+    <label>所属维度</label>
+    <select id="newFactorGroup">
+      <option value="geopolitical">地缘政治</option>
+      <option value="macro">宏观经济</option>
+      <option value="flow">资金面</option>
+      <option value="technical">技术面</option>
+      <option value="signal">关键信号</option>
+      <option value="catalyst">行业催化</option>
+    </select>
+    <label>初始评分（-5 极熊 到 +5 极牛）</label>
+    <input type="number" id="newFactorScore" value="0" min="-5" max="5">
+    <label>权重（1-10）</label>
+    <input type="number" id="newFactorWeight" value="5" min="1" max="10">
+    <label>备注（可选）</label>
+    <textarea id="newFactorNote" rows="2" placeholder="为什么加入这个因素？"></textarea>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeAddFactor()">取消</button>
+      <button class="btn btn-primary" onclick="addFactor()">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- History Panel -->
+<div class="history-panel" id="historyPanel">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+    <h3>历史快照</h3>
+    <button class="btn" onclick="toggleHistory()">✕</button>
+  </div>
+  <div id="historyList"></div>
+</div>
+
+<script>
+// ============================================================
+//  DATA MODEL
+// ============================================================
+const GROUPS = {
+  geopolitical: { label: '🌍 地缘政治', color: '#ef4444' },
+  macro:        { label: '📈 宏观经济', color: '#3b82f6' },
+  flow:         { label: '💰 资金面',   color: '#8b5cf6' },
+  technical:    { label: '📊 技术面',   color: '#f59e0b' },
+  signal:       { label: '🔔 关键信号', color: '#10b981' },
+  catalyst:     { label: '🚀 行业催化', color: '#06b6d4' }
+};
+
+// Initial factors based on current market analysis (2026-04-09)
+let factors = [
+  // Geopolitical
+  { id: 'ceasefire', name: '伊以停火进展', sub: '停火现裂痕·伊朗指控违约3条款·周六伊斯兰堡谈判', group: 'geopolitical', score: 0, weight: 9, note: '停火达成但伊朗议会指控美方违约3条款（以续打黎巴嫩/无人机被击落/铀浓缩），霍尔木兹仅4艘油轮通行，周六VP Vance领队直接谈判' },
+  { id: 'trump_donors', name: 'Trump金主利益', sub: '特朗普电话要求内塔尼亚胡缩减黎巴嫩打击', group: 'geopolitical', score: 1, weight: 7, note: '特朗普为保障谈判要求以色列减少黎巴嫩打击，显示谈判优先；但油价仍高（$99+）利好能源金主' },
+  { id: 'hormuz', name: '霍尔木兹海峡', sub: '仅4艘油轮·WTI $99反弹3%·GS预测全年均价$100+', group: 'geopolitical', score: -3, weight: 8, note: '停火脆弱，霍尔木兹远未恢复正常；沙特Yanbu港"尚未受影响"；加拿大原油溢价创2年多新高' },
+  { id: 'trade_rhythm', name: '2018贸易战节奏映射', sub: '18月4轮升级-缓和周期·处于缓和窗口', group: 'geopolitical', score: 0, weight: 6, note: '无直接新数据，中性' },
+  { id: 'midterm', name: '2026中期选举周期', sub: 'H1喂金主(高油价)→H2喂选民(压油拉股)·过渡信号', group: 'geopolitical', score: 1, weight: 9, note: '上半年仍在"喂金主"阶段（高油价），周六谈判暗示下半年转向布局开始；选举周期逻辑完好' },
+  { id: 'oil_redirect', name: '海湾→美湾石油转向', sub: '加拿大原油溢价2年多新高·转向仍不完整', group: 'geopolitical', score: -1, weight: 6, note: '全球买家转向美湾/加拿大替代油，但霍尔木兹仍大部分关闭，供应缺口持续' },
+
+  // Macro
+  { id: 'fed', name: 'Fed政策预期', sub: 'PCE上调至2.7%·维持3.5-3.75%·4/28-29 FOMC', group: 'macro', score: -1, weight: 8, note: 'Fed维持利率不变，PCE和核心PCE预期上调至2.7%，今年仅暗示降息一次但时点不明' },
+  { id: 'earnings', name: 'Q1财报季', sub: 'Q1 GDP约+3%·下周财报季开启·历史对应EPS双位数增长', group: 'macro', score: 1, weight: 7, note: 'Q4 GDP终值下修至0.5%但Q1估约+3%，初请失业金21万韧性，财报季是近期关键催化剂' },
+  { id: 'oil_price', name: '油价走向', sub: 'WTI $99-101(+3-7%)·停火脆弱=更高平台波动', group: 'macro', score: -2, weight: 7, note: '停火后油价从$94反弹至$99+，GS Pasquariello：大宗商品围绕更高平台波动；高油价是通胀和经济的持续逆风' },
+  { id: 'recession', name: '衰退概率', sub: 'Q1 GDP~+3%·劳动力韧性·消费者信心深度受损', group: 'macro', score: 0, weight: 6, note: '劳动力市场仍韧性（4周均值20.95万），但日本/英国/德国消费者信心均创近年低，DB指出1973年重演条件不成立' },
+
+  // Flow
+  { id: 'cta', name: 'CTA买入潜力', sub: 'CTA空头$300亿·买入$340亿/周·3动量阈值全转正', group: 'flow', score: 4, weight: 9, note: 'GS Flood：CTA空头约$300亿，模型预测未来一周买入$340亿，所有三个动量阈值全面转正，MOC买入不平衡+$38亿' },
+  { id: 'leverage', name: 'GS杠杆率', sub: '310%·5年期99百分位·历史极端', group: 'flow', score: -2, weight: 7, note: '总杠杆率310%（5年期99百分位），系统脆弱性极高；但去杠杆完成后弹弓效应强' },
+  { id: 'etf_short', name: 'ETF空头仓位', sub: '回补7.4%·2020年8月以来最大', group: 'flow', score: 3, weight: 8, note: 'ETF空头回补7.4%（2020年8月以来最大），Prime Book空头97百分位，仍有大量空头可供回补' },
+  { id: 'retail', name: '散户情绪', sub: 'JPM：活跃度1.2百分位·ETF敞口10月最低', group: 'flow', score: 2, weight: 5, note: 'JPM Retail Radar：散户从"逢低买入"转为"逢高卖出"，活跃度1.2百分位，ETF敞口10月最低 = 极端悲观逆向信号' },
+
+  // Technical
+  { id: 'spx_level', name: 'SPX关键位', sub: 'SPX 6,785(+2.55%)·CTA下一触发6,864尚未穿越', group: 'technical', score: 2, weight: 8, note: 'SPX收6,785，Citi：CTA下一触发E-mini 6,864尚未穿越，站稳200MA上方，趋势向上但面临阻力' },
+  { id: 'vix', name: 'VIX波动率', sub: '~21·区间19.91-22.17·从高位回落', group: 'technical', score: 1, weight: 7, note: 'VIX从恐慌高位回落至~21，仍偏高但下行趋势；MOVE指数从115降至约78' },
+  { id: 'breadth', name: '市场宽度', sub: '半导体领涨·整体上涨·软件vs半导体-8.5%历史最大差', group: 'technical', score: 1, weight: 5, note: '市场整体上涨，半导体vs软件(-8.5%历史最大差)明确轮动方向' },
+
+  // Signals
+  { id: 'ackman', name: '阿克曼信号', sub: '3/30翻多持续有效·今日无新动态', group: 'signal', score: 0, weight: 9, note: '3/30翻多信号仍有效（历史3次底部），但今日无新动态，保守中性' },
+  { id: 'wilson', name: '大行首席判断', sub: 'Privorotsky:不喜欢当前价位 vs Flood:CTA买入潮即将', group: 'signal', score: 0, weight: 6, note: 'GS内部分歧：Privorotsky不追涨，Flood看好CTA买入，相互抵消；综合中性' },
+
+  // Catalyst
+  { id: 'fiber', name: '光纤超级周期', sub: 'G.652.D +325%·G.657.A2 +843%·缺口16.4%延续至2027', group: 'catalyst', score: 5, weight: 8, note: '全球光纤需求5.77亿芯公里，缺口1.8亿（16.4%）；Meta/康宁$60亿长约；军用无人机新兴需求；GLW/COHR/YOFC直接受益' },
+  { id: 'nand', name: 'NAND超级周期', sub: 'NAND +151% YoY·DRAM +183% YoY·TAM上调$1.3T', group: 'catalyst', score: 4, weight: 7, note: 'BofA：半导体TAM从$1T上调至$1.3T，2030年达$2T（+20% CAGR）；SNDK逻辑芯片级别毛利' },
+  { id: 'ai_capex', name: 'AI资本开支', sub: 'Anthropic ARR $190亿→$300亿(1个月)·Meta+CoreWeave $210亿', group: 'catalyst', score: 4, weight: 8, note: 'Anthropic ARR一个月翻1.5倍；Meta+CoreWeave $210亿AI协议；Amazon $250亿密西西比数据中心；TSMC CapEx上调至$200亿+' },
+  { id: 'rare_earth', name: '稀土/出口管制', sub: 'H200对华出口停滞·ENFORCE法案·DeepSeek V4转昇腾', group: 'catalyst', score: -1, weight: 5, note: 'NVIDIA无法向中国发货H200；国会ENFORCE法案审查；DeepSeek V4将基于华为昇腾CANN训练，中国AI自主化加速' }
+];
+
+let scenarios = [
+  { id: 'bull', name: '🐂 强牛', color: '#34d399', prob: 25, trigger: '停火落地+Fed降息+CTA买入+选举行情提前', spx: '7200-7500', strategy: '满仓核心+波段全攻, 重仓GLW/COHR/SNDK' },
+  { id: 'base', name: '📈 温和上行', color: '#5b8def', prob: 45, trigger: '停火反复+H1震荡+H2选举拉升', spx: '6900-7100', strategy: '核心60%+波段30%, H1防守H2进攻' },
+  { id: 'range', name: '↔️ 区间震荡', color: '#fbbf24', prob: 20, trigger: '战争拖延+油价居高+选举前才发力', spx: '6500-6900', strategy: '核心40%+弹药加大, Q3末加仓赌选举行情' },
+  { id: 'bear', name: '🐻 深度回调', color: '#f87171', prob: 10, trigger: '冲突失控+衰退+选举逻辑破裂', spx: '<6300', strategy: '减至20%核心+大量现金, 等待恐慌低点' }
+];
+
+let signals = [
+  // 4/9 今日最新
+  { time: '04/09', type: 'warn', text: '停火裂痕：伊朗议会指控美方违约3条款（以续打黎巴嫩/无人机/铀浓缩），霍尔木兹仅4艘油轮' },
+  { time: '04/09', type: 'warn', text: 'WTI反弹至$99-101(+3-7%)，GS Pasquariello：大宗商品将围绕更高平台波动' },
+  { time: '04/09', type: 'bull', text: 'SPX 6,785(+2.55%)收盘；CTA空头$300亿，预测买入$340亿/周，3动量阈值全转正（GS Flood）' },
+  { time: '04/09', type: 'bull', text: 'ETF空头回补7.4%（2020年8月以来最大）；散户活跃度1.2百分位极端悲观=逆向看多（JPM）' },
+  { time: '04/09', type: 'bull', text: 'Anthropic ARR一月从$190亿跳至$300亿；Meta+CoreWeave $210亿AI协议；Amazon $250亿数据中心' },
+  { time: '04/09', type: 'bull', text: '光纤缺口16.4%（1.8亿芯公里）；G.657.A2 +843%；G.652.D +325%；延续至2027年底' },
+  { time: '04/09', type: 'info', text: '⚠️ 关键：周六（4/12）美伊伊斯兰堡直接谈判（VP Vance领队）= 本周最重要催化剂' },
+  { time: '04/09', type: 'bear', text: 'Fed维持3.5-3.75%，PCE上调至2.7%，今年仅暗示降息一次，通胀粘性上升' },
+  { time: '04/09', type: 'info', text: 'DeepSeek V4将基于华为昇腾CANN训练（脱离CUDA），中国AI算力自主化重大进展' },
+  { time: '04/09', type: 'bull', text: 'TSMC CapEx上调至$200亿+；Barclays升级MRVL至增持（目标$150，+43%）' },
+  // 4/8 停火日
+  { time: '04/08', type: 'bull', text: '★ 停火达成：SPX +2.5%，VIX→20.18，WTI暴跌16%至$93-94，降息概率14%→43%' },
+  { time: '04/08', type: 'bull', text: 'GS Schneider: AVGO确信榜买入，目标$480(+53%)，Google+Anthropic双锚定至2031年' },
+  { time: '04/08', type: 'bull', text: 'BofA: 半导体TAM从$1T上调至$1.3T, DRAM +183% YoY, NAND +151% YoY' },
+  { time: '04/08', type: 'info', text: 'GS Flood三段行情：冻结→轧空(当前)→进攻，科技记忆回归' },
+  { time: '04/08', type: 'warn', text: '停火脆弱：以色列续攻黎巴嫩，霍尔木兹仅15艘油轮（战前7%）' },
+  { time: '04/08', type: 'info', text: 'JPM下调SPX年末目标至7200(from 7500)，GS维持7600，DB 8000' },
+  // 3/30 阿克曼翻多
+  { time: '03/30', type: 'bull', text: '阿克曼3/30翻多："最好的买入时机之一，忽略空头" · FNMA"便宜得离谱"(10x) · 犹太资本代言人第三次底部信号' },
+  // 4/7
+  { time: '04/07', type: 'info', text: '阿克曼宣布$640亿收购UMG(环球音乐)' },
+  { time: '04/07', type: 'bull', text: 'GS Oppenheimer: 科技PEG压缩至0.7-0.9x，接近历史性买入区域' },
+  { time: '04/07', type: 'bull', text: 'SNDK: NAND合同价Q1 +38%，4月再涨10%+，Q2营收$3.03B(+61% YoY)' },
+  { time: '04/07', type: 'bull', text: 'Samsung Q1超预期34%，利润营收双超' },
+  { time: '04/07', type: 'bear', text: 'ISM服务业价格支付70.7(22年10月以来最高)，通胀粘性信号' },
+  { time: '04/07', type: 'info', text: 'Citi: CTA主要触发位已穿越(E-mini 6802, NQ 25106)，下一位6864' },
+  // 4/6
+  { time: '04/06', type: 'bull', text: 'CTA潜在买盘$1480B + ETF空头COVID以来最高 = 火箭燃料' },
+  { time: '04/06', type: 'info', text: 'COHR: 800G出货4200-4500万，1.6T 2700万(2026)，CW光源2030市场$4B' },
+];
+
+let snapshots = [];
+
+// ============================================================
+//  CALCULATION ENGINE
+// ============================================================
+function calcTotalScore() {
+  let weightedSum = 0, totalWeight = 0;
+  factors.forEach(f => {
+    weightedSum += f.score * f.weight;
+    totalWeight += f.weight;
+  });
+  // Normalize: score range [-5,5] → map to 0-100
+  // weighted average will be in [-5, 5], map to [0, 100]
+  const avg = totalWeight > 0 ? weightedSum / totalWeight : 0;
+  return Math.round((avg + 5) * 10); // -5→0, 0→50, +5→100
+}
+
+function getRecommendation(score) {
+  if (score >= 75) return { text: '🟢 激进做多', color: '#34d399', bg: 'rgba(52,211,153,0.15)', position: { core: 65, swing: 25, ammo: 10 } };
+  if (score >= 60) return { text: '🔵 标准偏多', color: '#5b8def', bg: 'rgba(91,141,239,0.15)', position: { core: 55, swing: 30, ammo: 15 } };
+  if (score >= 45) return { text: '🟡 中性偏多', color: '#fbbf24', bg: 'rgba(251,191,36,0.15)', position: { core: 45, swing: 25, ammo: 30 } };
+  if (score >= 35) return { text: '🟠 谨慎观望', color: '#fb923c', bg: 'rgba(251,146,60,0.15)', position: { core: 35, swing: 20, ammo: 45 } };
+  return { text: '🔴 防守为主', color: '#f87171', bg: 'rgba(248,113,113,0.15)', position: { core: 20, swing: 10, ammo: 70 } };
+}
+
+function getScoreColor(score) {
+  // score in range -5 to 5
+  if (score >= 3) return var_green;
+  if (score >= 1) return '#5b8def';
+  if (score >= -1) return '#fbbf24';
+  if (score >= -3) return '#fb923c';
+  return var_red;
+}
+
+const var_green = '#34d399';
+const var_red = '#f87171';
+
+// ============================================================
+//  RENDER FUNCTIONS
+// ============================================================
+function renderAll() {
+  renderFactors();
+  renderScore();
+  renderScenarios();
+  renderSignals();
+  renderHistory();
+  updatePhase();
+  updateTimestamp();
+}
+
+function renderFactors() {
+  const container = document.getElementById('factorContainer');
+  container.innerHTML = '';
+  const grouped = {};
+  factors.forEach(f => {
+    if (!grouped[f.group]) grouped[f.group] = [];
+    grouped[f.group].push(f);
+  });
+  Object.keys(GROUPS).forEach(gk => {
+    if (!grouped[gk] || grouped[gk].length === 0) return;
+    const g = GROUPS[gk];
+    const div = document.createElement('div');
+    div.className = 'factor-group';
+    div.innerHTML = `<div class="factor-group-title">${g.label}</div>`;
+    grouped[gk].forEach(f => {
+      const scoreColor = f.score >= 3 ? var_green : f.score >= 1 ? '#5b8def' : f.score >= -1 ? '#fbbf24' : f.score >= -3 ? '#fb923c' : var_red;
+      const item = document.createElement('div');
+      item.className = 'factor-item';
+      item.innerHTML = `
+        <div class="factor-name">${f.name}<span class="sub">${f.sub || ''}</span></div>
+        <input type="range" class="factor-slider" min="-5" max="5" value="${f.score}"
+          oninput="updateFactor('${f.id}', +this.value)"
+          style="accent-color:${scoreColor}">
+        <div class="factor-score" style="color:${scoreColor}">${f.score > 0 ? '+' : ''}${f.score}</div>
+        <div class="factor-weight tooltip" onclick="editWeight('${f.id}', this)">
+          W:${f.weight}
+          <span class="tip-text">点击修改权重</span>
+        </div>
+      `;
+      // Context menu for delete
+      item.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        if (confirm(`删除因素「${f.name}」？`)) {
+          factors = factors.filter(x => x.id !== f.id);
+          renderAll();
+          logSignal('info', `删除因素: ${f.name}`);
+        }
+      });
+      div.appendChild(item);
+    });
+    container.appendChild(div);
+  });
+}
+
+function renderScore() {
+  const score = calcTotalScore();
+  const rec = getRecommendation(score);
+
+  // Animate score
+  const scoreEl = document.getElementById('totalScore');
+  animateNumber(scoreEl, score);
+
+  // Gauge arc
+  const arc = document.getElementById('gaugeArc');
+  const circumference = 2 * Math.PI * 88;
+  const offset = circumference - (score / 100) * circumference;
+  arc.style.stroke = rec.color;
+  arc.style.strokeDashoffset = offset;
+
+  // Recommendation
+  const recEl = document.getElementById('recommendation');
+  recEl.textContent = rec.text;
+  recEl.style.color = rec.color;
+  recEl.style.background = rec.bg;
+
+  // Position bar
+  const pos = rec.position;
+  const bar = document.getElementById('positionBar');
+  bar.innerHTML = `
+    <div class="position-segment" style="width:${pos.core}%;background:${var_green};">核心 ${pos.core}%</div>
+    <div class="position-segment" style="width:${pos.swing}%;background:#5b8def;">波段 ${pos.swing}%</div>
+    <div class="position-segment" style="width:${pos.ammo}%;background:#6b7280;">弹药 ${pos.ammo}%</div>
+  `;
+  const legend = document.getElementById('positionLegend');
+  legend.innerHTML = `
+    <div class="position-legend-item"><div class="position-dot" style="background:${var_green}"></div>核心仓 (GLW/COHR/SNDK/AVGO)</div>
+    <div class="position-legend-item"><div class="position-dot" style="background:#5b8def"></div>波段仓 (轮动+事件驱动)</div>
+    <div class="position-legend-item"><div class="position-dot" style="background:#6b7280"></div>弹药 (现金+短期国债)</div>
+  `;
+}
+
+function renderScenarios() {
+  const body = document.getElementById('scenarioBody');
+  body.innerHTML = '';
+  // Auto-adjust probabilities based on score
+  const score = calcTotalScore();
+  if (!window._manualScenarios) {
+    autoAdjustScenarios(score);
+  }
+
+  scenarios.forEach(s => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="scenario-tag" style="background:${s.color}22;color:${s.color};">${s.name}</span></td>
+      <td>
+        <div class="prob-value" style="color:${s.color}">${s.prob}%</div>
+        <div class="prob-bar" style="width:${s.prob}%;background:${s.color};"></div>
+      </td>
+      <td style="color:var(--text-dim);font-size:12px;">${s.trigger}</td>
+      <td style="font-weight:600;">${s.spx}</td>
+      <td style="font-size:12px;">${s.strategy}</td>
+    `;
+    // Click to manually adjust probability
+    tr.querySelector('.prob-value').style.cursor = 'pointer';
+    tr.querySelector('.prob-value').addEventListener('click', () => {
+      const newProb = prompt(`调整「${s.name}」概率 (当前${s.prob}%):`, s.prob);
+      if (newProb !== null && !isNaN(+newProb)) {
+        window._manualScenarios = true;
+        s.prob = Math.max(0, Math.min(100, +newProb));
+        // Normalize
+        const total = scenarios.reduce((a, b) => a + b.prob, 0);
+        if (total !== 100) {
+          const others = scenarios.filter(x => x.id !== s.id);
+          const otherTotal = others.reduce((a, b) => a + b.prob, 0);
+          if (otherTotal > 0) {
+            const scale = (100 - s.prob) / otherTotal;
+            others.forEach(o => o.prob = Math.round(o.prob * scale));
+          }
+        }
+        renderScenarios();
+        logSignal('info', `手动调整${s.name}概率→${s.prob}%`);
+      }
+    });
+    body.appendChild(tr);
+  });
+}
+
+function autoAdjustScenarios(score) {
+  // Dynamic scenario probability based on composite score
+  if (score >= 70) {
+    scenarios[0].prob = 35; scenarios[1].prob = 40; scenarios[2].prob = 18; scenarios[3].prob = 7;
+  } else if (score >= 55) {
+    scenarios[0].prob = 25; scenarios[1].prob = 45; scenarios[2].prob = 20; scenarios[3].prob = 10;
+  } else if (score >= 45) {
+    scenarios[0].prob = 15; scenarios[1].prob = 35; scenarios[2].prob = 35; scenarios[3].prob = 15;
+  } else if (score >= 35) {
+    scenarios[0].prob = 8; scenarios[1].prob = 25; scenarios[2].prob = 40; scenarios[3].prob = 27;
+  } else {
+    scenarios[0].prob = 5; scenarios[1].prob = 15; scenarios[2].prob = 30; scenarios[3].prob = 50;
+  }
+}
+
+function renderSignals() {
+  const log = document.getElementById('signalLog');
+  log.innerHTML = '';
+  signals.forEach(s => {
+    const colors = { bull: var_green, bear: var_red, info: '#5b8def', warn: '#fbbf24' };
+    const labels = { bull: '多', bear: '空', info: '讯', warn: '警' };
+    const entry = document.createElement('div');
+    entry.className = 'signal-entry';
+    entry.innerHTML = `
+      <span class="signal-time">${s.time}</span>
+      <span class="signal-badge" style="background:${colors[s.type]}22;color:${colors[s.type]}">${labels[s.type]}</span>
+      <span>${s.text}</span>
+    `;
+    log.appendChild(entry);
+  });
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  list.innerHTML = '';
+  if (snapshots.length === 0) {
+    list.innerHTML = '<div style="color:var(--text-dim);text-align:center;padding:40px;">暂无历史快照<br><small>点击「保存快照」记录当前状态</small></div>';
+    return;
+  }
+  snapshots.slice().reverse().forEach((snap, i) => {
+    const rec = getRecommendation(snap.score);
+    const entry = document.createElement('div');
+    entry.className = 'history-entry';
+    entry.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div class="date">${snap.date}</div>
+          <div class="score" style="color:${rec.color}">${snap.score}</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:12px;color:${rec.color};">${rec.text}</div>
+          <div style="font-size:11px;color:var(--text-dim);">${snap.factors}个因素</div>
+        </div>
+      </div>
+      ${snap.note ? `<div style="font-size:12px;color:var(--text-dim);margin-top:6px;">${snap.note}</div>` : ''}
+    `;
+    entry.addEventListener('click', () => {
+      if (confirm('恢复此快照的所有因素评分？')) {
+        factors = JSON.parse(JSON.stringify(snap.factorData));
+        scenarios = JSON.parse(JSON.stringify(snap.scenarioData));
+        window._manualScenarios = snap.manualScenarios || false;
+        renderAll();
+        logSignal('info', `恢复快照: ${snap.date}`);
+      }
+    });
+    list.appendChild(entry);
+  });
+}
+
+function updatePhase() {
+  // Determine current phase based on overall score trend
+  const score = calcTotalScore();
+  document.querySelectorAll('.phase-block').forEach(el => {
+    el.classList.remove('active');
+  });
+  // Phase A if score > 50 and bullish
+  // For now, hardcode to Phase A (repair phase) since we're in April 2026
+  document.querySelector('[data-phase="A"]').classList.add('active');
+}
+
+function updateTimestamp() {
+  document.getElementById('lastUpdate').textContent = '上次更新: ' + new Date().toLocaleString('zh-CN');
+}
+
+// ============================================================
+//  INTERACTIONS
+// ============================================================
+function updateFactor(id, value) {
+  const f = factors.find(x => x.id === id);
+  if (f) {
+    f.score = value;
+    window._manualScenarios = false; // Reset manual scenarios on factor change
+    renderAll();
+  }
+}
+
+function editWeight(id, el) {
+  const f = factors.find(x => x.id === id);
+  const newW = prompt(`修改「${f.name}」权重 (1-10, 当前${f.weight}):`, f.weight);
+  if (newW !== null && !isNaN(+newW)) {
+    f.weight = Math.max(1, Math.min(10, Math.round(+newW)));
+    renderAll();
+    logSignal('info', `调整权重: ${f.name} → W:${f.weight}`);
+  }
+}
+
+function openAddFactor() {
+  document.getElementById('addFactorModal').classList.add('active');
+}
+
+function closeAddFactor() {
+  document.getElementById('addFactorModal').classList.remove('active');
+}
+
+function addFactor() {
+  const name = document.getElementById('newFactorName').value.trim();
+  if (!name) return alert('请输入因素名称');
+  const group = document.getElementById('newFactorGroup').value;
+  const score = Math.max(-5, Math.min(5, +document.getElementById('newFactorScore').value));
+  const weight = Math.max(1, Math.min(10, +document.getElementById('newFactorWeight').value));
+  const note = document.getElementById('newFactorNote').value.trim();
+
+  const id = 'f_' + Date.now();
+  factors.push({ id, name, sub: note || '', group, score, weight, note });
+
+  closeAddFactor();
+  document.getElementById('newFactorName').value = '';
+  document.getElementById('newFactorScore').value = '0';
+  document.getElementById('newFactorWeight').value = '5';
+  document.getElementById('newFactorNote').value = '';
+
+  renderAll();
+  logSignal('info', `新增因素: ${name} (${GROUPS[group].label})`);
+}
+
+function addSignal() {
+  const input = document.getElementById('signalInput');
+  const text = input.value.trim();
+  if (!text) return;
+
+  // Auto-detect type
+  let type = 'info';
+  if (/利好|上涨|突破|买入|翻多|反弹|超预期/.test(text)) type = 'bull';
+  else if (/利空|下跌|跌破|卖出|翻空|暴跌|不及预期/.test(text)) type = 'bear';
+  else if (/警告|风险|注意|小心/.test(text)) type = 'warn';
+
+  const now = new Date();
+  const timeStr = `${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+
+  signals.unshift({ time: timeStr, type, text });
+  input.value = '';
+  renderSignals();
+}
+
+function logSignal(type, text) {
+  const now = new Date();
+  const timeStr = `${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+  signals.unshift({ time: timeStr, type, text });
+}
+
+function exportSnapshot() {
+  const note = prompt('为这个快照添加备注（可选）:', '');
+  const snap = {
+    date: new Date().toLocaleString('zh-CN'),
+    score: calcTotalScore(),
+    factors: factors.length,
+    factorData: JSON.parse(JSON.stringify(factors)),
+    scenarioData: JSON.parse(JSON.stringify(scenarios)),
+    manualScenarios: window._manualScenarios || false,
+    note: note || ''
+  };
+  snapshots.push(snap);
+
+  // Save to localStorage-like mechanism (in-memory for now)
+  renderHistory();
+  logSignal('info', `保存快照: 评分${snap.score}`);
+  renderSignals();
+
+  // Also save state to a JSON file via download
+  const stateJson = JSON.stringify({ factors, scenarios, signals, snapshots }, null, 2);
+  const blob = new Blob([stateJson], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `dashboard_state_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+}
+
+function toggleHistory() {
+  document.getElementById('historyPanel').classList.toggle('active');
+}
+
+// Animation helper
+function animateNumber(el, target) {
+  const start = parseInt(el.textContent) || 0;
+  const diff = target - start;
+  const duration = 500;
+  const startTime = performance.now();
+  function step(t) {
+    const progress = Math.min((t - startTime) / duration, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    el.textContent = Math.round(start + diff * eased);
+    if (progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+// Load state from file (drag & drop)
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer.files[0];
+  if (file && file.name.endsWith('.json')) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const state = JSON.parse(reader.result);
+        if (state.factors) factors = state.factors;
+        if (state.scenarios) scenarios = state.scenarios;
+        if (state.signals) signals = state.signals;
+        if (state.snapshots) snapshots = state.snapshots;
+        renderAll();
+        alert('状态已恢复!');
+      } catch(e) { alert('文件格式错误'); }
+    };
+    reader.readAsText(file);
+  }
+});
+
+// Keyboard shortcut
+document.addEventListener('keydown', e => {
+  if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    openAddFactor();
+  }
+  if (e.key === 'h' && (e.metaKey || e.ctrlKey) && e.shiftKey) {
+    e.preventDefault();
+    toggleHistory();
+  }
+});
+
+// ============================================================
+//  HISTORICAL SCORE DATA (484 weeks from Trump inauguration 2017-01-20)
+// ============================================================
+// Scores simulated from real market events + SPX approximate weekly closes
+// Covers: Tax Cut Rally → Volmageddon → Trade War → COVID → AI Mania → Iran War
+const historicalData = [
+  { date: '2017-01-20', score: 62, spx: 2271, event: 'Trump就职 · 减税预期' },
+  { date: '2017-01-27', score: 64, spx: 2298, event: '' },
+  { date: '2017-02-03', score: 64, spx: 2304, event: '' },
+  { date: '2017-02-10', score: 64, spx: 2331, event: '' },
+  { date: '2017-02-17', score: 66, spx: 2351, event: '减税+放松监管预期升温' },
+  { date: '2017-02-24', score: 67, spx: 2360, event: '' },
+  { date: '2017-03-03', score: 65, spx: 2348, event: '' },
+  { date: '2017-03-10', score: 64, spx: 2357, event: '' },
+  { date: '2017-03-17', score: 65, spx: 2366, event: '' },
+  { date: '2017-03-24', score: 66, spx: 2354, event: '' },
+  { date: '2017-03-31', score: 64, spx: 2363, event: 'ACA废除失败 · 短暂回调' },
+  { date: '2017-04-07', score: 66, spx: 2375, event: '' },
+  { date: '2017-04-14', score: 64, spx: 2367, event: '' },
+  { date: '2017-04-21', score: 63, spx: 2379, event: '' },
+  { date: '2017-04-28', score: 65, spx: 2384, event: '100天 · 政策预期重估' },
+  { date: '2017-05-05', score: 67, spx: 2399, event: '' },
+  { date: '2017-05-12', score: 66, spx: 2393, event: '' },
+  { date: '2017-05-19', score: 65, spx: 2407, event: '' },
+  { date: '2017-05-26', score: 67, spx: 2415, event: '经济数据强劲' },
+  { date: '2017-06-02', score: 68, spx: 2424, event: '' },
+  { date: '2017-06-09', score: 66, spx: 2411, event: '' },
+  { date: '2017-06-16', score: 64, spx: 2420, event: '' },
+  { date: '2017-06-23', score: 66, spx: 2428, event: '' },
+  { date: '2017-06-30', score: 65, spx: 2423, event: '科技股回调' },
+  { date: '2017-07-07', score: 67, spx: 2442, event: '' },
+  { date: '2017-07-14', score: 66, spx: 2441, event: '' },
+  { date: '2017-07-21', score: 66, spx: 2460, event: '' },
+  { date: '2017-07-28', score: 68, spx: 2472, event: '财报季超预期' },
+  { date: '2017-08-04', score: 68, spx: 2472, event: '' },
+  { date: '2017-08-11', score: 65, spx: 2451, event: '' },
+  { date: '2017-08-18', score: 63, spx: 2450, event: '' },
+  { date: '2017-08-25', score: 63, spx: 2443, event: 'Charlottesville · 朝鲜导弹' },
+  { date: '2017-09-01', score: 66, spx: 2465, event: '' },
+  { date: '2017-09-08', score: 65, spx: 2466, event: '' },
+  { date: '2017-09-15', score: 65, spx: 2489, event: '' },
+  { date: '2017-09-22', score: 69, spx: 2511, event: '' },
+  { date: '2017-09-29', score: 69, spx: 2519, event: '减税法案推进' },
+  { date: '2017-10-06', score: 71, spx: 2541, event: '' },
+  { date: '2017-10-13', score: 70, spx: 2543, event: '' },
+  { date: '2017-10-20', score: 70, spx: 2566, event: '' },
+  { date: '2017-10-27', score: 72, spx: 2581, event: '科技领涨 · GDP强劲' },
+  { date: '2017-11-03', score: 74, spx: 2593, event: '' },
+  { date: '2017-11-10', score: 72, spx: 2585, event: '' },
+  { date: '2017-11-17', score: 71, spx: 2597, event: '' },
+  { date: '2017-11-24', score: 73, spx: 2602, event: '减税法案通过众议院' },
+  { date: '2017-12-01', score: 75, spx: 2623, event: '' },
+  { date: '2017-12-08', score: 73, spx: 2624, event: '' },
+  { date: '2017-12-15', score: 73, spx: 2645, event: '' },
+  { date: '2017-12-22', score: 75, spx: 2666, event: '' },
+  { date: '2017-12-29', score: 75, spx: 2674, event: '★ 减税法案签署 · 年末新高' },
+  { date: '2018-01-05', score: 77, spx: 2731, event: '' },
+  { date: '2018-01-12', score: 76, spx: 2767, event: '' },
+  { date: '2018-01-19', score: 76, spx: 2823, event: '' },
+  { date: '2018-01-26', score: 78, spx: 2873, event: '★ 减税效应 · 创新高 · 低波动率极端' },
+  { date: '2018-02-02', score: 63, spx: 2753, event: '' },
+  { date: '2018-02-09', score: 45, spx: 2619, event: '★ Volmageddon · XIV爆仓 · VIX暴涨' },
+  { date: '2018-02-16', score: 51, spx: 2690, event: '' },
+  { date: '2018-02-23', score: 55, spx: 2748, event: 'V型反弹 · 但波动率regime changed' },
+  { date: '2018-03-02', score: 53, spx: 2715, event: '' },
+  { date: '2018-03-09', score: 48, spx: 2661, event: '' },
+  { date: '2018-03-16', score: 44, spx: 2628, event: '' },
+  { date: '2018-03-23', score: 42, spx: 2588, event: '★ Trump对华关税232 · 贸易战开始' },
+  { date: '2018-03-30', score: 42, spx: 2603, event: '' },
+  { date: '2018-04-06', score: 40, spx: 2604, event: '中国报复关税 · 全球恐慌' },
+  { date: '2018-04-13', score: 45, spx: 2633, event: '' },
+  { date: '2018-04-20', score: 46, spx: 2641, event: '' },
+  { date: '2018-04-27', score: 50, spx: 2670, event: '缓和信号 · 财报季救场' },
+  { date: '2018-05-04', score: 53, spx: 2690, event: '' },
+  { date: '2018-05-11', score: 52, spx: 2689, event: '' },
+  { date: '2018-05-18', score: 52, spx: 2708, event: '' },
+  { date: '2018-05-25', score: 55, spx: 2721, event: '朝鲜峰会预期 · 意大利危机' },
+  { date: '2018-06-01', score: 57, spx: 2747, event: '' },
+  { date: '2018-06-08', score: 57, spx: 2753, event: '' },
+  { date: '2018-06-15', score: 58, spx: 2779, event: 'Fed加息 · 但经济强劲' },
+  { date: '2018-06-22', score: 54, spx: 2755, event: '' },
+  { date: '2018-06-29', score: 48, spx: 2718, event: '★ 第一轮关税$340亿生效在即' },
+  { date: '2018-07-06', score: 50, spx: 2760, event: '关税$340亿正式生效' },
+  { date: '2018-07-13', score: 54, spx: 2786, event: '' },
+  { date: '2018-07-20', score: 55, spx: 2792, event: '' },
+  { date: '2018-07-27', score: 58, spx: 2818, event: 'GDP 4.1% · 科技财报强' },
+  { date: '2018-08-03', score: 61, spx: 2839, event: '' },
+  { date: '2018-08-10', score: 61, spx: 2840, event: '' },
+  { date: '2018-08-17', score: 62, spx: 2861, event: '' },
+  { date: '2018-08-24', score: 65, spx: 2875, event: 'SPX创新高 · 牛市最长记录' },
+  { date: '2018-08-31', score: 67, spx: 2896, event: '' },
+  { date: '2018-09-07', score: 66, spx: 2896, event: '' },
+  { date: '2018-09-14', score: 66, spx: 2916, event: '' },
+  { date: '2018-09-21', score: 68, spx: 2930, event: '★ 历史新高2940 · 但$2000亿关税9/24生效' },
+  { date: '2018-09-28', score: 63, spx: 2914, event: '' },
+  { date: '2018-10-05', score: 55, spx: 2885, event: '★ 10Y破3.2% · 科技开始暴跌' },
+  { date: '2018-10-12', score: 51, spx: 2817, event: '' },
+  { date: '2018-10-19', score: 43, spx: 2727, event: '' },
+  { date: '2018-10-26', score: 38, spx: 2659, event: '10月大屠杀 · FAANG暴跌' },
+  { date: '2018-11-02', score: 44, spx: 2727, event: '' },
+  { date: '2018-11-09', score: 48, spx: 2781, event: '中期选举后反弹 · 分裂国会' },
+  { date: '2018-11-16', score: 45, spx: 2713, event: '' },
+  { date: '2018-11-23', score: 40, spx: 2632, event: 'AAPL暴跌 · 油价崩盘' },
+  { date: '2018-11-30', score: 39, spx: 2639, event: '' },
+  { date: '2018-12-07', score: 35, spx: 2633, event: 'Huawei CFO被捕 · 收益率曲线倒挂' },
+  { date: '2018-12-14', score: 30, spx: 2499, event: '' },
+  { date: '2018-12-24', score: 22, spx: 2351, event: '★ 圣诞前夜大崩盘 · Fed被骂 · 年度最低' },
+  { date: '2018-12-31', score: 30, spx: 2507, event: '超卖反弹 · 年跌6.2%' },
+  { date: '2019-01-07', score: 36, spx: 2568, event: '' },
+  { date: '2019-01-14', score: 40, spx: 2609, event: '' },
+  { date: '2019-01-18', score: 45, spx: 2670, event: 'Fed鸽派转向信号' },
+  { date: '2019-01-25', score: 49, spx: 2703, event: '' },
+  { date: '2019-02-01', score: 50, spx: 2716, event: '' },
+  { date: '2019-02-08', score: 51, spx: 2750, event: '' },
+  { date: '2019-02-15', score: 55, spx: 2776, event: '★ Fed正式暂停加息 · 政策大转弯' },
+  { date: '2019-02-22', score: 55, spx: 2772, event: '' },
+  { date: '2019-03-01', score: 53, spx: 2747, event: '' },
+  { date: '2019-03-08', score: 52, spx: 2743, event: '全球PMI下行 · 收益率曲线倒挂' },
+  { date: '2019-03-15', score: 55, spx: 2780, event: '' },
+  { date: '2019-03-22', score: 56, spx: 2797, event: '' },
+  { date: '2019-03-29', score: 58, spx: 2834, event: '贸易谈判"进展良好"' },
+  { date: '2019-04-05', score: 61, spx: 2867, event: '' },
+  { date: '2019-04-12', score: 61, spx: 2880, event: '' },
+  { date: '2019-04-19', score: 62, spx: 2914, event: '' },
+  { date: '2019-04-26', score: 65, spx: 2940, event: '财报季超预期 · SPX创新高' },
+  { date: '2019-05-03', score: 60, spx: 2917, event: '' },
+  { date: '2019-05-10', score: 52, spx: 2881, event: '★ Trump突然加关税至25% · 谈判破裂' },
+  { date: '2019-05-17', score: 49, spx: 2845, event: '' },
+  { date: '2019-05-24', score: 44, spx: 2788, event: '' },
+  { date: '2019-05-31', score: 40, spx: 2752, event: '5月大跌 · 墨西哥关税威胁' },
+  { date: '2019-06-07', score: 49, spx: 2825, event: '' },
+  { date: '2019-06-14', score: 54, spx: 2877, event: '' },
+  { date: '2019-06-21', score: 62, spx: 2950, event: '★ G20前缓和 · Fed暗示降息' },
+  { date: '2019-06-28', score: 64, spx: 2970, event: '' },
+  { date: '2019-07-05', score: 64, spx: 2970, event: '' },
+  { date: '2019-07-12', score: 65, spx: 2990, event: 'SPX首次突破3000' },
+  { date: '2019-07-19', score: 66, spx: 2994, event: '' },
+  { date: '2019-07-26', score: 63, spx: 2976, event: '' },
+  { date: '2019-07-31', score: 63, spx: 2980, event: '★ Fed降息25bp · 但鹰派措辞' },
+  { date: '2019-08-05', score: 38, spx: 2844, event: '★ Trump加征$3000亿关税 · 人民币破7' },
+  { date: '2019-08-12', score: 38, spx: 2852, event: '' },
+  { date: '2019-08-19', score: 36, spx: 2839, event: '' },
+  { date: '2019-08-23', score: 35, spx: 2847, event: '中国报复关税 · Powell Jackson Hole' },
+  { date: '2019-08-30', score: 44, spx: 2907, event: '' },
+  { date: '2019-09-06', score: 50, spx: 2947, event: '' },
+  { date: '2019-09-13', score: 58, spx: 3007, event: '中美重启谈判 · Fed再降息' },
+  { date: '2019-09-20', score: 59, spx: 3005, event: '' },
+  { date: '2019-09-27', score: 56, spx: 2982, event: '' },
+  { date: '2019-10-04', score: 54, spx: 2979, event: '' },
+  { date: '2019-10-11', score: 55, spx: 2970, event: '★ "Phase 1"协议框架达成' },
+  { date: '2019-10-18', score: 60, spx: 3003, event: '' },
+  { date: '2019-10-25', score: 62, spx: 3022, event: 'Fed第3次降息 · 经济数据稳' },
+  { date: '2019-11-01', score: 65, spx: 3062, event: '' },
+  { date: '2019-11-08', score: 66, spx: 3080, event: '' },
+  { date: '2019-11-15', score: 68, spx: 3120, event: 'Phase 1细节推进 · 创新高' },
+  { date: '2019-11-22', score: 70, spx: 3139, event: '' },
+  { date: '2019-11-29', score: 70, spx: 3137, event: '' },
+  { date: '2019-12-06', score: 70, spx: 3156, event: '' },
+  { date: '2019-12-13', score: 72, spx: 3168, event: '★ Phase 1签署在即 · 关税暂停' },
+  { date: '2019-12-20', score: 74, spx: 3196, event: '' },
+  { date: '2019-12-27', score: 73, spx: 3203, event: '' },
+  { date: '2019-12-31', score: 74, spx: 3231, event: '年末大涨28.9% · 历史最佳之一' },
+  { date: '2020-01-07', score: 74, spx: 3287, event: '' },
+  { date: '2020-01-17', score: 72, spx: 3329, event: 'Phase 1签署 · 新高' },
+  { date: '2020-01-24', score: 73, spx: 3349, event: '' },
+  { date: '2020-01-31', score: 71, spx: 3348, event: '' },
+  { date: '2020-02-07', score: 69, spx: 3367, event: '' },
+  { date: '2020-02-14', score: 70, spx: 3380, event: 'COVID初现但市场忽视' },
+  { date: '2020-02-21', score: 55, spx: 3338, event: '意大利疫情爆发 · 恐慌开始' },
+  { date: '2020-02-28', score: 35, spx: 2954, event: '★ 一周跌11% · 最快修正记录' },
+  { date: '2020-03-06', score: 32, spx: 2972, event: '熔断前夜 · 油价战争' },
+  { date: '2020-03-13', score: 22, spx: 2711, event: '★ 多次熔断 · VIX 75 · 流动性危机' },
+  { date: '2020-03-23', score: 15, spx: 2237, event: '★ COVID底部2191 · 阿克曼第一次翻多' },
+  { date: '2020-03-30', score: 24, spx: 2370, event: '' },
+  { date: '2020-04-03', score: 30, spx: 2489, event: '刺激法案$2.2T · 开始反弹' },
+  { date: '2020-04-10', score: 37, spx: 2689, event: '' },
+  { date: '2020-04-17', score: 42, spx: 2875, event: 'V型反弹持续 · 科技领涨' },
+  { date: '2020-04-24', score: 42, spx: 2859, event: '' },
+  { date: '2020-05-01', score: 40, spx: 2830, event: '经济重启预期 · 但数据极差' },
+  { date: '2020-05-08', score: 44, spx: 2890, event: '' },
+  { date: '2020-05-15', score: 45, spx: 2930, event: '' },
+  { date: '2020-05-22', score: 46, spx: 2991, event: '' },
+  { date: '2020-05-29', score: 50, spx: 3044, event: '重启加速 · Fed无限QE' },
+  { date: '2020-06-05', score: 51, spx: 3042, event: '' },
+  { date: '2020-06-12', score: 49, spx: 3020, event: '' },
+  { date: '2020-06-19', score: 47, spx: 3018, event: '' },
+  { date: '2020-06-26', score: 48, spx: 3009, event: '二次疫情担忧 · 科技分化' },
+  { date: '2020-07-03', score: 51, spx: 3068, event: '' },
+  { date: '2020-07-10', score: 52, spx: 3107, event: '' },
+  { date: '2020-07-17', score: 53, spx: 3166, event: '' },
+  { date: '2020-07-24', score: 57, spx: 3225, event: '' },
+  { date: '2020-07-31', score: 58, spx: 3271, event: '科技巨头财报超预期' },
+  { date: '2020-08-07', score: 61, spx: 3337, event: '' },
+  { date: '2020-08-14', score: 61, spx: 3383, event: '' },
+  { date: '2020-08-21', score: 62, spx: 3449, event: '' },
+  { date: '2020-08-28', score: 65, spx: 3508, event: '创新高 · Fed平均通胀目标制' },
+  { date: '2020-09-04', score: 63, spx: 3462, event: '' },
+  { date: '2020-09-11', score: 57, spx: 3396, event: '' },
+  { date: '2020-09-18', score: 52, spx: 3351, event: '' },
+  { date: '2020-09-25', score: 50, spx: 3298, event: '9月科技回调 · 大选不确定性' },
+  { date: '2020-10-02', score: 50, spx: 3299, event: '' },
+  { date: '2020-10-09', score: 48, spx: 3280, event: '' },
+  { date: '2020-10-16', score: 46, spx: 3281, event: '' },
+  { date: '2020-10-23', score: 47, spx: 3282, event: '' },
+  { date: '2020-10-30', score: 45, spx: 3270, event: '大选前不确定性 · 疫情恶化' },
+  { date: '2020-11-06', score: 62, spx: 3509, event: '★ Biden当选 · 分裂政府预期' },
+  { date: '2020-11-13', score: 65, spx: 3559, event: '' },
+  { date: '2020-11-20', score: 66, spx: 3588, event: '' },
+  { date: '2020-11-27', score: 68, spx: 3638, event: '★ 辉瑞疫苗 · 价值股暴涨' },
+  { date: '2020-12-04', score: 70, spx: 3669, event: '' },
+  { date: '2020-12-11', score: 68, spx: 3678, event: '' },
+  { date: '2020-12-18', score: 68, spx: 3709, event: '' },
+  { date: '2020-12-25', score: 70, spx: 3739, event: '' },
+  { date: '2020-12-31', score: 70, spx: 3756, event: '年末新高 · 年涨16.3%' },
+  { date: '2021-01-07', score: 70, spx: 3752, event: '' },
+  { date: '2021-01-14', score: 67, spx: 3728, event: '' },
+  { date: '2021-01-21', score: 65, spx: 3725, event: '' },
+  { date: '2021-01-29', score: 65, spx: 3714, event: 'GameStop散户狂潮 · 市场震荡' },
+  { date: '2021-02-05', score: 66, spx: 3745, event: '' },
+  { date: '2021-02-12', score: 63, spx: 3756, event: '' },
+  { date: '2021-02-19', score: 61, spx: 3787, event: '' },
+  { date: '2021-02-26', score: 62, spx: 3811, event: '10Y yield暴涨至1.5% · 科技承压' },
+  { date: '2021-03-05', score: 65, spx: 3859, event: '' },
+  { date: '2021-03-12', score: 65, spx: 3886, event: '' },
+  { date: '2021-03-19', score: 65, spx: 3933, event: '' },
+  { date: '2021-03-26', score: 68, spx: 3974, event: '$1.9T刺激法案 · 经济重启' },
+  { date: '2021-04-02', score: 70, spx: 4022, event: '' },
+  { date: '2021-04-09', score: 69, spx: 4050, event: '' },
+  { date: '2021-04-16', score: 69, spx: 4098, event: '' },
+  { date: '2021-04-23', score: 72, spx: 4146, event: '' },
+  { date: '2021-04-30', score: 72, spx: 4181, event: '财报季历史最强 · SPX创新高' },
+  { date: '2021-05-07', score: 73, spx: 4194, event: '' },
+  { date: '2021-05-14', score: 71, spx: 4186, event: '' },
+  { date: '2021-05-21', score: 69, spx: 4198, event: '' },
+  { date: '2021-05-28', score: 70, spx: 4204, event: 'Meme股热潮 · CPI开始升温' },
+  { date: '2021-06-04', score: 72, spx: 4230, event: '' },
+  { date: '2021-06-11', score: 71, spx: 4236, event: '' },
+  { date: '2021-06-18', score: 70, spx: 4262, event: '' },
+  { date: '2021-06-25', score: 72, spx: 4281, event: '基建法案推进 · Fed鸽派' },
+  { date: '2021-07-02', score: 74, spx: 4311, event: '' },
+  { date: '2021-07-09', score: 72, spx: 4320, event: '' },
+  { date: '2021-07-16', score: 71, spx: 4350, event: '' },
+  { date: '2021-07-23', score: 74, spx: 4379, event: '' },
+  { date: '2021-07-30', score: 73, spx: 4395, event: '持续创新高 · Delta变种担忧' },
+  { date: '2021-08-06', score: 74, spx: 4430, event: '' },
+  { date: '2021-08-13', score: 72, spx: 4445, event: '' },
+  { date: '2021-08-20', score: 71, spx: 4481, event: '' },
+  { date: '2021-08-27', score: 72, spx: 4509, event: 'Jackson Hole · Taper预期' },
+  { date: '2021-09-03', score: 71, spx: 4502, event: '' },
+  { date: '2021-09-10', score: 67, spx: 4475, event: '' },
+  { date: '2021-09-17', score: 63, spx: 4469, event: '' },
+  { date: '2021-09-24', score: 62, spx: 4455, event: '恒大危机 · Taper担忧 · 债务上限' },
+  { date: '2021-10-01', score: 65, spx: 4492, event: '' },
+  { date: '2021-10-08', score: 65, spx: 4508, event: '' },
+  { date: '2021-10-15', score: 65, spx: 4545, event: '' },
+  { date: '2021-10-22', score: 69, spx: 4582, event: '' },
+  { date: '2021-10-29', score: 70, spx: 4605, event: '财报超预期 · V型恢复' },
+  { date: '2021-11-05', score: 69, spx: 4609, event: '' },
+  { date: '2021-11-12', score: 65, spx: 4593, event: '' },
+  { date: '2021-11-19', score: 61, spx: 4597, event: '' },
+  { date: '2021-11-26', score: 60, spx: 4594, event: '★ Omicron变种 · 感恩节暴跌' },
+  { date: '2021-12-03', score: 63, spx: 4635, event: '' },
+  { date: '2021-12-10', score: 63, spx: 4656, event: '' },
+  { date: '2021-12-17', score: 63, spx: 4697, event: '' },
+  { date: '2021-12-24', score: 67, spx: 4738, event: '' },
+  { date: '2021-12-31', score: 68, spx: 4766, event: '年末新高 · 年涨26.9%' },
+  { date: '2022-01-07', score: 64, spx: 4689, event: '' },
+  { date: '2022-01-14', score: 58, spx: 4592, event: '' },
+  { date: '2022-01-21', score: 52, spx: 4516, event: '' },
+  { date: '2022-01-28', score: 48, spx: 4432, event: 'Fed鹰派转向 · 1月大跌' },
+  { date: '2022-02-04', score: 47, spx: 4427, event: '' },
+  { date: '2022-02-11', score: 43, spx: 4401, event: '' },
+  { date: '2022-02-18', score: 39, spx: 4396, event: '' },
+  { date: '2022-02-25', score: 38, spx: 4384, event: '★ 俄罗斯入侵乌克兰' },
+  { date: '2022-03-04', score: 42, spx: 4431, event: '' },
+  { date: '2022-03-11', score: 43, spx: 4457, event: '' },
+  { date: '2022-03-18', score: 44, spx: 4503, event: '' },
+  { date: '2022-03-25', score: 48, spx: 4543, event: '反弹 · Fed首次加息25bp' },
+  { date: '2022-04-01', score: 47, spx: 4468, event: '' },
+  { date: '2022-04-08', score: 42, spx: 4372, event: '' },
+  { date: '2022-04-15', score: 39, spx: 4297, event: '' },
+  { date: '2022-04-22', score: 38, spx: 4221, event: '' },
+  { date: '2022-04-29', score: 35, spx: 4132, event: '通胀8.5% · 科技暴跌' },
+  { date: '2022-05-06', score: 34, spx: 4062, event: '' },
+  { date: '2022-05-13', score: 30, spx: 3971, event: '' },
+  { date: '2022-05-20', score: 28, spx: 3901, event: '连续7周下跌 · 差点熊市' },
+  { date: '2022-05-27', score: 28, spx: 3851, event: '' },
+  { date: '2022-06-03', score: 25, spx: 3781, event: '' },
+  { date: '2022-06-10', score: 22, spx: 3732, event: '' },
+  { date: '2022-06-17', score: 22, spx: 3675, event: '★ Fed加息75bp · CPI 9.1% · 正式熊市' },
+  { date: '2022-06-24', score: 27, spx: 3758, event: '' },
+  { date: '2022-07-01', score: 28, spx: 3820, event: '' },
+  { date: '2022-07-08', score: 31, spx: 3903, event: '' },
+  { date: '2022-07-15', score: 36, spx: 3985, event: '' },
+  { date: '2022-07-22', score: 40, spx: 4047, event: '' },
+  { date: '2022-07-29', score: 42, spx: 4130, event: '夏季反弹 · "Fed pivot"幻想' },
+  { date: '2022-08-05', score: 42, spx: 4119, event: '' },
+  { date: '2022-08-12', score: 38, spx: 4087, event: '' },
+  { date: '2022-08-19', score: 35, spx: 4076, event: '' },
+  { date: '2022-08-26', score: 35, spx: 4058, event: '★ Jackson Hole鹰派 · Powell粉碎pivot幻想' },
+  { date: '2022-09-02', score: 34, spx: 3971, event: '' },
+  { date: '2022-09-09', score: 29, spx: 3862, event: '' },
+  { date: '2022-09-16', score: 26, spx: 3775, event: '' },
+  { date: '2022-09-23', score: 25, spx: 3687, event: '' },
+  { date: '2022-09-30', score: 22, spx: 3586, event: '英国养老金危机 · 全球恐慌' },
+  { date: '2022-10-07', score: 22, spx: 3591, event: '' },
+  { date: '2022-10-14', score: 20, spx: 3583, event: '★ CPI超预期 → 但盘中逆转(底部)' },
+  { date: '2022-10-21', score: 30, spx: 3749, event: '' },
+  { date: '2022-10-28', score: 38, spx: 3901, event: '底部确认 · 反弹启动' },
+  { date: '2022-11-04', score: 42, spx: 3939, event: '' },
+  { date: '2022-11-11', score: 43, spx: 3957, event: '' },
+  { date: '2022-11-18', score: 44, spx: 3995, event: '' },
+  { date: '2022-11-25', score: 48, spx: 4026, event: 'CPI下行 · Fed放慢预期' },
+  { date: '2022-12-02', score: 48, spx: 3996, event: '' },
+  { date: '2022-12-09', score: 44, spx: 3945, event: '' },
+  { date: '2022-12-16', score: 42, spx: 3915, event: '' },
+  { date: '2022-12-23', score: 42, spx: 3884, event: '' },
+  { date: '2022-12-30', score: 40, spx: 3840, event: '年跌19.4% · 2008以来最差' },
+  { date: '2023-01-06', score: 44, spx: 3904, event: '' },
+  { date: '2023-01-13', score: 46, spx: 3948, event: '' },
+  { date: '2023-01-20', score: 48, spx: 4013, event: '' },
+  { date: '2023-01-27', score: 52, spx: 4070, event: 'ChatGPT热潮 · 科技反弹' },
+  { date: '2023-02-03', score: 52, spx: 4052, event: '' },
+  { date: '2023-02-10', score: 48, spx: 4013, event: '' },
+  { date: '2023-02-17', score: 45, spx: 3995, event: '' },
+  { date: '2023-02-24', score: 45, spx: 3970, event: '通胀粘性 · 加息预期升温' },
+  { date: '2023-03-03', score: 40, spx: 3923, event: '' },
+  { date: '2023-03-10', score: 32, spx: 3862, event: '★ SVB倒闭 · 银行危机' },
+  { date: '2023-03-17', score: 38, spx: 3923, event: '' },
+  { date: '2023-03-24', score: 42, spx: 3971, event: 'Fed加息但提供流动性' },
+  { date: '2023-03-31', score: 46, spx: 4018, event: '' },
+  { date: '2023-04-07', score: 47, spx: 4043, event: '' },
+  { date: '2023-04-14', score: 48, spx: 4090, event: '' },
+  { date: '2023-04-21', score: 53, spx: 4136, event: '' },
+  { date: '2023-04-28', score: 55, spx: 4169, event: '银行危机消退 · 财报季稳健' },
+  { date: '2023-05-05', score: 57, spx: 4185, event: '' },
+  { date: '2023-05-12', score: 56, spx: 4180, event: '' },
+  { date: '2023-05-19', score: 56, spx: 4196, event: '' },
+  { date: '2023-05-26', score: 58, spx: 4205, event: '★ NVDA指引暴涨 · AI狂潮开启' },
+  { date: '2023-06-02', score: 61, spx: 4261, event: '' },
+  { date: '2023-06-09', score: 60, spx: 4296, event: '' },
+  { date: '2023-06-16', score: 61, spx: 4352, event: '' },
+  { date: '2023-06-23', score: 64, spx: 4408, event: '' },
+  { date: '2023-06-30', score: 65, spx: 4450, event: 'AI七巨头领涨 · 经济软着陆' },
+  { date: '2023-07-07', score: 67, spx: 4490, event: '' },
+  { date: '2023-07-14', score: 66, spx: 4509, event: '' },
+  { date: '2023-07-21', score: 66, spx: 4549, event: '' },
+  { date: '2023-07-28', score: 68, spx: 4582, event: 'Fed最后一次加息 · 连续新高' },
+  { date: '2023-08-04', score: 66, spx: 4545, event: '' },
+  { date: '2023-08-11', score: 61, spx: 4487, event: '' },
+  { date: '2023-08-18', score: 57, spx: 4449, event: '' },
+  { date: '2023-08-25', score: 55, spx: 4405, event: '8月回调 · 10Y yield 4.3%' },
+  { date: '2023-09-01', score: 54, spx: 4389, event: '' },
+  { date: '2023-09-08', score: 51, spx: 4351, event: '' },
+  { date: '2023-09-15', score: 48, spx: 4335, event: '' },
+  { date: '2023-09-22', score: 48, spx: 4318, event: '' },
+  { date: '2023-09-29', score: 45, spx: 4288, event: '利率higher for longer · 油价涨' },
+  { date: '2023-10-06', score: 45, spx: 4252, event: '' },
+  { date: '2023-10-13', score: 41, spx: 4196, event: '' },
+  { date: '2023-10-20', score: 38, spx: 4160, event: '' },
+  { date: '2023-10-27', score: 38, spx: 4117, event: '10Y yield 5% · 修正-10%' },
+  { date: '2023-11-03', score: 45, spx: 4234, event: '' },
+  { date: '2023-11-10', score: 50, spx: 4331, event: '' },
+  { date: '2023-11-17', score: 55, spx: 4449, event: '' },
+  { date: '2023-11-24', score: 62, spx: 4559, event: '★ CPI下行 · Fed pivot真的来了' },
+  { date: '2023-12-01', score: 65, spx: 4608, event: '' },
+  { date: '2023-12-08', score: 66, spx: 4636, event: '' },
+  { date: '2023-12-15', score: 67, spx: 4686, event: '' },
+  { date: '2023-12-22', score: 71, spx: 4735, event: '' },
+  { date: '2023-12-29', score: 72, spx: 4770, event: '★ Fed dots暗示2024降息3次 · 年涨24.2%' },
+  { date: '2024-01-05', score: 73, spx: 4807, event: '' },
+  { date: '2024-01-12', score: 71, spx: 4823, event: '' },
+  { date: '2024-01-19', score: 69, spx: 4860, event: '' },
+  { date: '2024-01-26', score: 70, spx: 4890, event: '创新高 · AI投资加速' },
+  { date: '2024-02-02', score: 72, spx: 4946, event: '' },
+  { date: '2024-02-09', score: 71, spx: 4982, event: '' },
+  { date: '2024-02-16', score: 70, spx: 5039, event: '' },
+  { date: '2024-02-23', score: 72, spx: 5088, event: 'NVDA财报炸裂 · SPX破5000' },
+  { date: '2024-03-01', score: 74, spx: 5128, event: '' },
+  { date: '2024-03-08', score: 72, spx: 5147, event: '' },
+  { date: '2024-03-15', score: 71, spx: 5188, event: '' },
+  { date: '2024-03-22', score: 74, spx: 5228, event: '' },
+  { date: '2024-03-28', score: 73, spx: 5254, event: '持续创新高 · 宽度改善' },
+  { date: '2024-04-04', score: 68, spx: 5165, event: '' },
+  { date: '2024-04-11', score: 61, spx: 5056, event: '' },
+  { date: '2024-04-19', score: 55, spx: 4967, event: '中东紧张(伊朗-以色列) · 通胀反弹' },
+  { date: '2024-04-26', score: 59, spx: 5042, event: '' },
+  { date: '2024-05-03', score: 60, spx: 5095, event: '' },
+  { date: '2024-05-10', score: 61, spx: 5170, event: '' },
+  { date: '2024-05-17', score: 66, spx: 5244, event: '' },
+  { date: '2024-05-24', score: 68, spx: 5305, event: '创新高 · NVDA分拆宣布' },
+  { date: '2024-05-31', score: 70, spx: 5343, event: '' },
+  { date: '2024-06-07', score: 68, spx: 5360, event: '' },
+  { date: '2024-06-14', score: 68, spx: 5398, event: '' },
+  { date: '2024-06-21', score: 70, spx: 5436, event: '' },
+  { date: '2024-06-28', score: 70, spx: 5460, event: 'AI投资周期确认' },
+  { date: '2024-07-05', score: 72, spx: 5536, event: '' },
+  { date: '2024-07-12', score: 71, spx: 5591, event: '' },
+  { date: '2024-07-16', score: 72, spx: 5667, event: '★ SPX创5669新高' },
+  { date: '2024-07-23', score: 62, spx: 5514, event: '' },
+  { date: '2024-07-30', score: 49, spx: 5339, event: '' },
+  { date: '2024-08-05', score: 38, spx: 5186, event: '★ 日元套利平仓 · 全球闪崩' },
+  { date: '2024-08-12', score: 46, spx: 5308, event: '' },
+  { date: '2024-08-19', score: 51, spx: 5410, event: '' },
+  { date: '2024-08-26', score: 57, spx: 5533, event: '' },
+  { date: '2024-08-30', score: 65, spx: 5648, event: 'V型反弹 · Fed降息在即' },
+  { date: '2024-09-06', score: 68, spx: 5676, event: '' },
+  { date: '2024-09-13', score: 68, spx: 5682, event: '' },
+  { date: '2024-09-18', score: 70, spx: 5710, event: '★ Fed降息50bp · 超预期鸽派' },
+  { date: '2024-09-25', score: 71, spx: 5755, event: '' },
+  { date: '2024-10-02', score: 69, spx: 5780, event: '' },
+  { date: '2024-10-09', score: 67, spx: 5826, event: '' },
+  { date: '2024-10-18', score: 68, spx: 5864, event: '持续创新高 · 大选前' },
+  { date: '2024-10-25', score: 72, spx: 5915, event: '' },
+  { date: '2024-11-01', score: 72, spx: 5945, event: '' },
+  { date: '2024-11-08', score: 75, spx: 5996, event: '★ Trump当选 · "Trump Trade"启动' },
+  { date: '2024-11-15', score: 75, spx: 6015, event: '' },
+  { date: '2024-11-22', score: 73, spx: 6013, event: '' },
+  { date: '2024-11-29', score: 72, spx: 6032, event: '感恩节新高 · 减税预期' },
+  { date: '2024-12-06', score: 73, spx: 6090, event: 'SPX破6000' },
+  { date: '2024-12-13', score: 65, spx: 5985, event: '' },
+  { date: '2024-12-18', score: 55, spx: 5867, event: '★ Fed鹰派降息 · 2025只降2次 · 暴跌' },
+  { date: '2024-12-25', score: 58, spx: 5881, event: '' },
+  { date: '2024-12-31', score: 58, spx: 5881, event: '年末回调 · 但年涨23.3%' },
+  { date: '2025-01-07', score: 61, spx: 5946, event: '' },
+  { date: '2025-01-17', score: 62, spx: 5997, event: 'Trump就职前 · 政策预期' },
+  { date: '2025-01-24', score: 65, spx: 6101, event: 'DeepSeek冲击 · AI竞争' },
+  { date: '2025-01-31', score: 63, spx: 6070, event: '' },
+  { date: '2025-02-07', score: 58, spx: 6026, event: '关税担忧升温' },
+  { date: '2025-02-14', score: 61, spx: 6092, event: '' },
+  { date: '2025-02-19', score: 62, spx: 6144, event: '★ SPX 6144 高位' },
+  { date: '2025-02-26', score: 53, spx: 5964, event: '' },
+  { date: '2025-03-07', score: 42, spx: 5770, event: '关税冲击开始 · 科技回调' },
+  { date: '2025-03-14', score: 42, spx: 5714, event: '' },
+  { date: '2025-03-21', score: 39, spx: 5636, event: '' },
+  { date: '2025-03-28', score: 38, spx: 5580, event: '4月关税恐慌前' },
+  { date: '2025-04-04', score: 25, spx: 5074, event: '★ Liberation Day · 对等关税 · 暴跌-10%' },
+  { date: '2025-04-11', score: 35, spx: 5363, event: '90天暂停信号 · 剧烈反弹' },
+  { date: '2025-04-18', score: 40, spx: 5451, event: '' },
+  { date: '2025-04-25', score: 42, spx: 5525, event: '谈判重启预期' },
+  { date: '2025-05-02', score: 50, spx: 5599, event: '' },
+  { date: '2025-05-09', score: 55, spx: 5660, event: '中美日内瓦谈判预期' },
+  { date: '2025-05-16', score: 65, spx: 5917, event: '★ 中美日内瓦协议 · 关税大降' },
+  { date: '2025-05-23', score: 65, spx: 5909, event: '' },
+  { date: '2025-05-30', score: 62, spx: 5888, event: 'AI资本开支周期确认' },
+  { date: '2025-06-06', score: 64, spx: 5958, event: '' },
+  { date: '2025-06-13', score: 64, spx: 6007, event: '' },
+  { date: '2025-06-20', score: 64, spx: 6077, event: '' },
+  { date: '2025-06-27', score: 66, spx: 6140, event: '夏季修复 · 创新高' },
+  { date: '2025-07-04', score: 69, spx: 6214, event: '' },
+  { date: '2025-07-11', score: 69, spx: 6268, event: '' },
+  { date: '2025-07-18', score: 69, spx: 6343, event: '' },
+  { date: '2025-07-25', score: 72, spx: 6410, event: '科技财报超预期 · AI主线' },
+  { date: '2025-08-01', score: 73, spx: 6427, event: '' },
+  { date: '2025-08-08', score: 71, spx: 6423, event: '' },
+  { date: '2025-08-15', score: 69, spx: 6440, event: '' },
+  { date: '2025-08-22', score: 70, spx: 6450, event: 'Jackson Hole鸽派' },
+  { date: '2025-08-29', score: 72, spx: 6469, event: '' },
+  { date: '2025-09-05', score: 70, spx: 6468, event: '' },
+  { date: '2025-09-12', score: 69, spx: 6488, event: '' },
+  { date: '2025-09-19', score: 71, spx: 6500, event: 'Fed降息 · 中东升温' },
+  { date: '2025-09-26', score: 71, spx: 6480, event: '' },
+  { date: '2025-10-03', score: 67, spx: 6440, event: '' },
+  { date: '2025-10-10', score: 66, spx: 6420, event: '以色列-真主党升级' },
+  { date: '2025-10-17', score: 69, spx: 6470, event: '' },
+  { date: '2025-10-24', score: 68, spx: 6500, event: '' },
+  { date: '2025-10-31', score: 70, spx: 6550, event: 'Q3财报季超预期' },
+  { date: '2025-11-07', score: 73, spx: 6632, event: '' },
+  { date: '2025-11-14', score: 74, spx: 6700, event: '年底拉升 · 政策乐观' },
+  { date: '2025-11-21', score: 75, spx: 6724, event: '' },
+  { date: '2025-11-28', score: 72, spx: 6726, event: '' },
+  { date: '2025-12-05', score: 72, spx: 6750, event: 'Fed再降息' },
+  { date: '2025-12-12', score: 73, spx: 6781, event: '' },
+  { date: '2025-12-19', score: 72, spx: 6791, event: '' },
+  { date: '2025-12-26', score: 71, spx: 6821, event: '' },
+  { date: '2025-12-31', score: 72, spx: 6845, event: '年末收官创新高' },
+  { date: '2026-01-09', score: 73, spx: 6939, event: '★ SPX新年新高6939' },
+  { date: '2026-01-16', score: 70, spx: 6851, event: '' },
+  { date: '2026-01-23', score: 65, spx: 6750, event: 'Trump就职 · 政策不确定性' },
+  { date: '2026-01-30', score: 61, spx: 6672, event: '' },
+  { date: '2026-02-07', score: 55, spx: 6580, event: '伊朗-以色列摩擦加剧' },
+  { date: '2026-02-14', score: 48, spx: 6510, event: '霍尔木兹海峡紧张' },
+  { date: '2026-02-21', score: 40, spx: 6470, event: '★ 美以联合打击伊朗 · 油价飙升' },
+  { date: '2026-02-28', score: 35, spx: 6470, event: '霍尔木兹关闭 · 原油破$110' },
+  { date: '2026-03-07', score: 33, spx: 6490, event: '油价持续高位 · 通胀恐慌' },
+  { date: '2026-03-14', score: 36, spx: 6520, event: '科技回调但AI资本开支不减' },
+  { date: '2026-03-21', score: 38, spx: 6550, event: 'Fed维持利率 · 观望立场' },
+  // ── 以下为近2周每日数据（提高信号敏感性）──
+  { date: '2026-03-25', score: 40, spx: 6570, event: '光纤G.652.D价格再创新高' },
+  { date: '2026-03-26', score: 41, spx: 6585, event: 'NAND合同价Q1累计+38%' },
+  { date: '2026-03-27', score: 42, spx: 6600, event: 'SNDK宣布4月涨价10%+' },
+  { date: '2026-03-28', score: 43, spx: 6610, event: '停火试探信号初现' },
+  { date: '2026-03-30', score: 48, spx: 6625, event: '★ 阿克曼翻多(第3次底部信号)："最好的买入时机，忽略空头" · FNMA 10x' },
+  { date: '2026-03-31', score: 47, spx: 6620, event: 'COHR OFC展会1.6T突破' },
+  { date: '2026-04-01', score: 45, spx: 6635, event: 'Samsung Q1超预期34%' },
+  { date: '2026-04-02', score: 44, spx: 6620, event: '霍尔木兹仍仅7%通行量' },
+  { date: '2026-04-03', score: 46, spx: 6650, event: 'GS铜价预测下调 · 但科技强' },
+  { date: '2026-04-04', score: 47, spx: 6660, event: 'BofA半导体TAM上调至$1.3T' },
+  { date: '2026-04-05', score: 48, spx: 6670, event: '周末：中国施压伊朗接受谈判(NYT)' },
+  { date: '2026-04-06', score: 52, spx: 6700, event: 'Wilson见底判断 · CTA $1480B就绪 · 21份研报偏多' },
+  { date: '2026-04-07', score: 58, spx: 6783, event: '阿克曼$640亿收UMG · ETF空头COVID以来最高 · GS科技PEG 0.7-0.9x' },
+  { date: '2026-04-08', score: 65, spx: 6950, event: '★ 停火达成 · SPX+2.5% · VIX→20 · 油跌16% · 降息概率14→43%' },
+  { date: '2026-04-09', score: 59, spx: 6785, event: '停火裂痕·霍尔木兹仅4艘油轮·WTI反弹$99·周六美伊伊斯兰堡直接谈判·CTA买入$340亿/周待触发' }
+];
+
+
+let scoreChart = null;
+let currentRange = 'all';
+
+function initChart() {
+  const ctx = document.getElementById('scoreChart').getContext('2d');
+
+  // Create gradient for score line
+  const scoreGrad = ctx.createLinearGradient(0, 0, 0, 360);
+  scoreGrad.addColorStop(0, 'rgba(91,141,239,0.3)');
+  scoreGrad.addColorStop(1, 'rgba(91,141,239,0.01)');
+
+  scoreChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        {
+          label: '决策评分',
+          data: [],
+          borderColor: '#5b8def',
+          backgroundColor: scoreGrad,
+          borderWidth: 2.5,
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          pointHoverRadius: 6,
+          pointHoverBackgroundColor: '#5b8def',
+          pointHoverBorderColor: '#fff',
+          pointHoverBorderWidth: 2,
+          yAxisID: 'y',
+        },
+        {
+          label: 'SPX (归一化)',
+          data: [],
+          borderColor: 'rgba(167,139,250,0.6)',
+          borderWidth: 1.5,
+          borderDash: [4, 3],
+          fill: false,
+          tension: 0.3,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+          yAxisID: 'y',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: {
+        mode: 'index',
+        intersect: false,
+      },
+      plugins: {
+        legend: {
+          display: true,
+          position: 'top',
+          align: 'end',
+          labels: {
+            color: '#8b8fa3',
+            font: { size: 11 },
+            boxWidth: 20,
+            padding: 15,
+          }
+        },
+        tooltip: {
+          backgroundColor: '#1a1d27',
+          borderColor: '#2a2e3e',
+          borderWidth: 1,
+          titleColor: '#e4e6f0',
+          bodyColor: '#8b8fa3',
+          padding: 12,
+          displayColors: false,
+          callbacks: {
+            title: function(items) {
+              const idx = items[0].dataIndex;
+              const d = getFilteredData()[idx];
+              return d ? d.date : '';
+            },
+            label: function(item) {
+              const idx = item.dataIndex;
+              const d = getFilteredData()[idx];
+              if (item.datasetIndex === 0) {
+                const rec = getRecommendation(d.score);
+                return [`评分: ${d.score}/100  ${rec.text}`, `SPX: ${d.spx.toLocaleString()}`, `事件: ${d.event}`];
+              }
+              return null;
+            }
+          }
+        },
+        // Zone annotations drawn via plugin
+      },
+      scales: {
+        x: {
+          grid: { color: 'rgba(255,255,255,0.03)', drawBorder: false },
+          ticks: { color: '#8b8fa3', font: { size: 10 }, maxRotation: 45, maxTicksLimit: 20, autoSkip: true },
+        },
+        y: {
+          min: 20,
+          max: 85,
+          grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+          ticks: {
+            color: '#8b8fa3',
+            font: { size: 10 },
+            callback: function(v) { return v; }
+          },
+        }
+      }
+    },
+    plugins: [{
+      id: 'zoneBackground',
+      beforeDraw: function(chart) {
+        const ctx = chart.ctx;
+        const yAxis = chart.scales.y;
+        const xAxis = chart.scales.x;
+        const zones = [
+          { min: 20, max: 35, color: 'rgba(248,113,113,0.06)' },  // red
+          { min: 35, max: 45, color: 'rgba(251,146,60,0.06)' },   // orange
+          { min: 45, max: 60, color: 'rgba(251,191,36,0.06)' },   // yellow
+          { min: 60, max: 85, color: 'rgba(52,211,153,0.06)' },   // green
+        ];
+        zones.forEach(z => {
+          const top = yAxis.getPixelForValue(z.max);
+          const bottom = yAxis.getPixelForValue(z.min);
+          ctx.fillStyle = z.color;
+          ctx.fillRect(xAxis.left, top, xAxis.width, bottom - top);
+        });
+        // Draw threshold lines
+        [35, 45, 60].forEach(v => {
+          const y = yAxis.getPixelForValue(v);
+          ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(xAxis.left, y);
+          ctx.lineTo(xAxis.right, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        });
+      }
+    },
+    {
+      // Draw daily/weekly boundary line
+      id: 'dailyBoundary',
+      afterDraw: function(chart) {
+        const ctx = chart.ctx;
+        const data = getFilteredData();
+        const twoWeeksAgo = new Date();
+        twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+        const twoWeeksStr = twoWeeksAgo.toISOString().slice(0, 10);
+        // Find the first daily data point index
+        const boundaryIdx = data.findIndex(d => d.date >= twoWeeksStr);
+        if (boundaryIdx > 0 && boundaryIdx < data.length) {
+          const meta = chart.getDatasetMeta(0);
+          const point = meta.data[boundaryIdx];
+          if (point) {
+            const yAxis = chart.scales.y;
+            ctx.save();
+            ctx.strokeStyle = 'rgba(91,141,239,0.4)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([6, 4]);
+            ctx.beginPath();
+            ctx.moveTo(point.x, yAxis.top);
+            ctx.lineTo(point.x, yAxis.bottom);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            // Label
+            ctx.fillStyle = 'rgba(91,141,239,0.7)';
+            ctx.font = '10px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText('← 周频', point.x - 48, yAxis.top + 14);
+            ctx.fillText('每日 →', point.x + 4, yAxis.top + 14);
+            ctx.restore();
+          }
+        }
+      }
+    },
+    {
+      // Draw event markers for major events (starred)
+      id: 'eventMarkers',
+      afterDraw: function(chart) {
+        const ctx = chart.ctx;
+        const meta = chart.getDatasetMeta(0);
+        const filtered = getFilteredData();
+        filtered.forEach((d, i) => {
+          if (d.event && d.event.startsWith('★')) {
+            const point = meta.data[i];
+            if (point) {
+              ctx.fillStyle = '#fbbf24';
+              ctx.font = '14px sans-serif';
+              ctx.fillText('★', point.x - 6, point.y - 12);
+            }
+          }
+        });
+      }
+    }]
+  });
+
+  updateChart();
+}
+
+function getFilteredData() {
+  let data = [...historicalData];
+  // Add current live score
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
+  const currentScore = calcTotalScore();
+  // If today's entry exists, update it; otherwise it's already there from historicalData
+  const todayIdx = data.findIndex(d => d.date === todayStr);
+  if (todayIdx >= 0) {
+    data[todayIdx].score = currentScore;
+  }
+
+  // Also append any snapshots as data points
+  snapshots.forEach(snap => {
+    const snapDate = new Date(snap.date).toISOString().slice(0, 10);
+    if (!data.find(d => d.date === snapDate)) {
+      data.push({ date: snapDate, score: snap.score, spx: 0, event: snap.note || '快照' });
+    }
+  });
+
+  data.sort((a, b) => a.date.localeCompare(b.date));
+
+  // Filter by range
+  const cutoff = new Date();
+  if (currentRange === '3m') cutoff.setMonth(cutoff.getMonth() - 3);
+  else if (currentRange === '6m') cutoff.setMonth(cutoff.getMonth() - 6);
+  else if (currentRange === '1y') cutoff.setFullYear(cutoff.getFullYear() - 1);
+  else if (currentRange === '3y') cutoff.setFullYear(cutoff.getFullYear() - 3);
+  else if (currentRange === '5y') cutoff.setFullYear(cutoff.getFullYear() - 5);
+  else cutoff.setFullYear(2016); // all from before Trump inauguration
+
+  const cutoffStr = cutoff.toISOString().slice(0, 10);
+  return data.filter(d => d.date >= cutoffStr);
+}
+
+function updateChart() {
+  if (!scoreChart) return;
+  const data = getFilteredData();
+
+  // Normalize SPX to score scale for overlay
+  const spxValues = data.map(d => d.spx).filter(v => v > 0);
+  const spxMin = Math.min(...spxValues) * 0.995;
+  const spxMax = Math.max(...spxValues) * 1.005;
+
+  scoreChart.data.labels = data.map(d => {
+    const parts = d.date.split('-');
+    if (currentRange === 'all' || currentRange === '5y' || currentRange === '3y') {
+      return `${parts[0].slice(2)}/${parts[1]}`;
+    }
+    if (currentRange === '1y' || currentRange === '6m') {
+      return `${parts[1]}/${parts[2]}`;
+    }
+    // 3m or shorter: full date
+    return `${parts[1]}/${parts[2]}`;
+  });
+  scoreChart.data.datasets[0].data = data.map(d => d.score);
+
+  // Show point radius only for daily data (recent 2 weeks)
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  const twoWeeksStr = twoWeeksAgo.toISOString().slice(0, 10);
+  scoreChart.data.datasets[0].pointRadius = data.map(d => d.date >= twoWeeksStr ? 4 : 0);
+  scoreChart.data.datasets[0].pointBackgroundColor = data.map(d => {
+    if (d.date < twoWeeksStr) return 'transparent';
+    if (d.event && d.event.startsWith('★')) return '#fbbf24';
+    return '#5b8def';
+  });
+  scoreChart.data.datasets[0].pointBorderColor = data.map(d => d.date >= twoWeeksStr ? '#0f1117' : 'transparent');
+  scoreChart.data.datasets[0].pointBorderWidth = data.map(d => d.date >= twoWeeksStr ? 2 : 0);
+  scoreChart.data.datasets[1].data = data.map(d => {
+    if (d.spx <= 0) return null;
+    // Normalize SPX to 20-85 range to overlay
+    return 20 + ((d.spx - spxMin) / (spxMax - spxMin)) * 65;
+  });
+
+  scoreChart.update('none');
+}
+
+function setChartRange(range) {
+  currentRange = range;
+  ['3m','6m','1y','3y','5y','all'].forEach(r => {
+    const btn = document.getElementById('btn' + r);
+    if (btn) {
+      btn.className = r === range ? 'btn btn-primary' : 'btn';
+    }
+  });
+  updateChart();
+}
+
+// Extend snapshot export to also update chart
+const _origExportSnapshot = exportSnapshot;
+exportSnapshot = function() {
+  _origExportSnapshot();
+  updateChart();
+};
+
+// ============================================================
+//  INIT
+// ============================================================
+renderAll();
+initChart();
+</script>
+</body>
+</html>

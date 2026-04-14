@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Yang's Market Decision Dashboard</title>
+<title>Yang's Market Decision Dashboard · 2026-04-14</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
 :root {
@@ -230,6 +230,76 @@ header h1 span { color: var(--accent); }
 }
 .weight-editor.active { display: block; }
 .weight-editor input { width: 60px; text-align: center; }
+
+/* ===== Sector Rotation ===== */
+.sector-summary-bar {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;
+  padding: 12px 16px; background: rgba(91,141,239,0.07); border-radius: 8px;
+}
+.sector-summary-item {
+  display: flex; align-items: center; gap: 8px; font-size: 12px;
+}
+.sector-summary-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.sector-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 8px;
+}
+@media (max-width: 1200px) { .sector-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) { .sector-grid { grid-template-columns: 1fr; } }
+.sector-card {
+  background: rgba(255,255,255,0.02); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px; cursor: pointer; transition: all 0.2s;
+  position: relative; overflow: hidden;
+}
+.sector-card:hover { border-color: var(--accent); background: rgba(255,255,255,0.04); }
+.sector-card.active { border-color: var(--accent); }
+.sector-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+.sector-card-name { font-size: 14px; font-weight: 700; }
+.sector-card-tickers { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+.sector-updated { font-size: 10px; color: var(--text-dim); }
+.flow-section { margin-bottom: 10px; }
+.flow-section-title { font-size: 10px; color: var(--text-dim); margin-bottom: 5px; font-weight: 600; letter-spacing: 0.3px; }
+.flow-row { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
+.flow-label { font-size: 10px; color: var(--text-dim); min-width: 22px; }
+.flow-track { flex: 1; height: 8px; background: var(--border); border-radius: 4px; position: relative; overflow: visible; }
+.flow-bar-fill {
+  position: absolute; height: 100%; top: 0; border-radius: 4px; transition: width 0.4s;
+}
+.flow-bar-fill.positive { background: var(--green); right: 50%; }
+.flow-bar-fill.negative { background: var(--red); left: 50%; }
+.flow-center-line { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 2px; background: var(--border); border-radius: 1px; }
+.flow-val { font-size: 10px; font-weight: 700; min-width: 16px; text-align: right; }
+.money-section { margin-bottom: 10px; }
+.money-bar-track { height: 12px; border-radius: 6px; overflow: hidden; display: flex; margin-bottom: 4px; }
+.money-seg { height: 100%; transition: width 0.4s; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.8); }
+.money-legend { display: flex; gap: 10px; }
+.money-legend-item { display: flex; align-items: center; gap: 4px; font-size: 10px; color: var(--text-dim); }
+.money-dot { width: 7px; height: 7px; border-radius: 50%; }
+.phase-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.phase-badge {
+  padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700;
+}
+.phase-A { background: rgba(37,99,235,0.2); color: #60a5fa; }
+.phase-B { background: rgba(52,211,153,0.2); color: #34d399; }
+.phase-C { background: rgba(251,191,36,0.2); color: #fbbf24; }
+.phase-D { background: rgba(251,146,60,0.2); color: #fb923c; }
+.phase-E { background: rgba(248,113,113,0.2); color: #f87171; }
+.signal-badge {
+  padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; margin-left: auto;
+}
+.signal-strong { background: rgba(52,211,153,0.25); color: #34d399; }
+.signal-buy { background: rgba(91,141,239,0.25); color: #5b8def; }
+.signal-hold { background: rgba(251,191,36,0.2); color: #fbbf24; }
+.signal-caution { background: rgba(251,146,60,0.2); color: #fb923c; }
+.signal-avoid { background: rgba(248,113,113,0.2); color: #f87171; }
+.sector-note { font-size: 11px; color: var(--text-dim); line-height: 1.5; border-top: 1px solid var(--border); padding-top: 8px; margin-top: 4px; }
+.sector-prediction { font-size: 11px; color: var(--text); font-weight: 500; }
+.sector-filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.sector-filter-btn {
+  padding: 4px 12px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text-dim); cursor: pointer; font-size: 12px;
+  transition: all 0.2s;
+}
+.sector-filter-btn:hover, .sector-filter-btn.active { border-color: var(--accent); color: var(--text); background: rgba(91,141,239,0.12); }
 </style>
 </head>
 <body>
@@ -398,92 +468,176 @@ header h1 span { color: var(--accent); }
     </div>
   </div>
 
-  <!-- Trading Strategy Section -->
+  <!-- Trading Strategy Section — 大行研报加权综合排名 -->
   <div class="card" style="margin-bottom:20px;">
-    <div class="card-title"><span class="icon">💎</span> 核心持仓 — 高确定性（Core 55-65%）</div>
-    <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">战和双赢标的 · 无论停火成败都有结构性支撑 · 长期持有不动摇</div>
+    <div class="card-title"><span class="icon">🏆</span> 大行研报加权综合排名 — 2026-04-14</div>
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">基于GS/JPM/MS/BofA/DB/Citi等大行研报，按研究员影响力×推荐强度×目标价上行×催化剂时效×结构性论点 五维加权评分</div>
+    <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px;">数据来源：4月6-13日大行研报摘要（共80+份） · 价格实时更新 · 每日自动刷新</div>
     <table class="scenario-table">
       <thead><tr>
-        <th>股票</th><th>当前价</th><th>目标价</th><th>上行空间</th><th>核心逻辑</th><th>催化剂</th><th>风险</th>
+        <th style="width:30px;">#</th><th>股票</th><th>价格</th><th>加权分</th><th>大行评级/目标价</th><th>核心逻辑（研报依据）</th><th>催化剂</th><th>风险</th>
       </tr></thead>
       <tbody>
-        <tr>
+        <tr style="background:rgba(52,211,153,0.06);">
+          <td style="font-weight:900;color:#34d399;font-size:16px;">1</td>
+          <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">TSMC</span><br><small>台积电ADR</small></td>
+          <td style="font-weight:700;">$380</td>
+          <td style="color:#34d399;font-weight:900;font-size:15px;">91</td>
+          <td style="font-size:11px;"><b style="color:#34d399;">BofA Buy $500</b> (Liu/Yang 8/10)<br>GS Johnstone: capex上调+营收增速35%<br>JPM Deshpande: ASML OW €1,515(生态)</td>
+          <td style="font-size:11px;">3nm利用率>100%。毛利率→66%。capex $550亿→2028年$770亿。20x 2027E P/E，处历史区间中低端。AI算力基石</td>
+          <td style="font-size:11px;color:var(--yellow);">⭐周四Q1财报! · 定价+利润率指引 · ASML明日财报联动</td>
+          <td style="font-size:11px;color:var(--red);">地缘(台湾) · 资本开支超预期下修</td>
+        </tr>
+        <tr style="background:rgba(52,211,153,0.06);">
+          <td style="font-weight:900;color:#34d399;font-size:16px;">2</td>
           <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">AVGO</span><br><small>Broadcom</small></td>
-          <td style="font-weight:700;">$314</td>
-          <td style="color:#34d399;font-weight:700;">$480</td>
-          <td style="color:#34d399;font-weight:700;">+53%</td>
-          <td style="font-size:12px;">GS确信榜买入。Google+Anthropic双锚定至2031年，锁定定制AI芯片TAM 70%。FY28E P/E仅16.4x</td>
+          <td style="font-weight:700;">$379</td>
+          <td style="color:#34d399;font-weight:900;font-size:15px;">88</td>
+          <td style="font-size:11px;"><b style="color:#34d399;">GS确信榜Buy $480</b> (Schneider 8/10)<br>BofA: 15-20x远期P/E具吸引力<br>GS Flood: 重点回补标的(GOOGL/AVGO/AMZN)</td>
+          <td style="font-size:11px;">Google+Anthropic双锚定至2031年，锁定AI芯片TAM 70%。FY28E P/E仅16.4x，EPS增长92%($10→$24)。FCF收益率→6.8%</td>
           <td style="font-size:11px;color:var(--yellow);">Q2财报(5月) · 以太网ASIC份额扩大 · Anthropic芯片量产</td>
           <td style="font-size:11px;color:var(--red);">超大规模资本开支削减 · NVDA进入定制芯片</td>
         </tr>
         <tr>
+          <td style="font-weight:900;color:#a78bfa;font-size:16px;">3</td>
+          <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">SNDK</span><br><small>SanDisk</small></td>
+          <td style="font-weight:700;">$942</td>
+          <td style="color:#a78bfa;font-weight:900;font-size:15px;">81</td>
+          <td style="font-size:11px;"><b style="color:#34d399;">Bernstein $1,250</b> · Cantor $1,000<br>Jefferies $1,000 · 三家齐升(4/9)<br>BofA: NAND +151% YoY，TAM $1.3T→$2T</td>
+          <td style="font-size:11px;">NAND超级周期。三星Q2内存再提价30%。HBM需求链强化。上调目标至$1,000-1,250区间</td>
+          <td style="font-size:11px;color:var(--yellow);">三星提价30% · TSMC周四财报 · Kioxia整合 · SK海力士联动</td>
+          <td style="font-size:11px;color:var(--red);">NAND价格周期见顶 · 中国存储扩张 · 估值偏高</td>
+        </tr>
+        <tr>
+          <td style="font-weight:900;color:#a78bfa;font-size:16px;">4</td>
+          <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">LITE</span><br><small>Lumentum</small></td>
+          <td style="font-weight:700;">$863</td>
+          <td style="color:#a78bfa;font-weight:900;font-size:15px;">76</td>
+          <td style="font-size:11px;"><b style="color:#34d399;">JPM OW $950</b> · BNP $1,040<br>Needham $850 · MS $595(偏保守)<br>Bloomberg: 2028产能两季度内售罄</td>
+          <td style="font-size:11px;">AI光学引擎。OFC确认"光学超级周期"。JPM上调至$950反映1.6T量产预期。估值高适合波段操作</td>
+          <td style="font-size:11px;color:var(--yellow);">Q3 FY2026财报 · 1.6T收发器出货 · 数据中心采购周期</td>
+          <td style="font-size:11px;color:var(--red);">估值透支 · 客户集中度 · 光学周期见顶</td>
+        </tr>
+        <tr>
+          <td style="font-weight:900;color:#a78bfa;font-size:16px;">5</td>
+          <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">NVDA</span><br><small>Nvidia</small></td>
+          <td style="font-weight:700;">$195</td>
+          <td style="color:#a78bfa;font-weight:900;font-size:15px;">76</td>
+          <td style="font-size:11px;">BofA Arya: 15-20x远期P/E具吸引力<br>GS情绪扫描: NVDA情绪最强<br>BofA: 半导体TAM $1.3T→$2T (+20% CAGR)</td>
+          <td style="font-size:11px;">H200获批出口中国(25%关税)。阿里/字节大批量下单。$1.3T→$2T半导体TAM核心。DC销售CY27同比+$1,800-2,000亿</td>
+          <td style="font-size:11px;color:var(--yellow);">H200中国出口 · AI TAM扩张 · 5日+7%动量</td>
+          <td style="font-size:11px;color:var(--red);">出口管制风险 · 定制芯片竞争(AVGO) · 估值</td>
+        </tr>
+        <tr>
+          <td style="font-weight:900;color:var(--text-dim);font-size:16px;">6</td>
           <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">GLW</span><br><small>Corning</small></td>
-          <td style="font-weight:700;">$132</td>
-          <td style="color:#34d399;font-weight:700;">$194-220</td>
-          <td style="color:#34d399;font-weight:700;">+47~67%</td>
-          <td style="font-size:12px;">光纤超级周期核心。Springboard $110B管线+Meta $60B。光纤价格G.652.D +567%。护城河20/25</td>
-          <td style="font-size:11px;color:var(--yellow);">北卡工厂扩产 · Springboard订单转化 · Q2财报</td>
-          <td style="font-size:11px;color:var(--red);">光纤价格见顶 · 超大规模客户资本开支缩减</td>
+          <td style="font-weight:700;">$171</td>
+          <td style="color:var(--text-dim);font-weight:900;font-size:15px;">64</td>
+          <td style="font-size:11px;">MS $127 · Mizuho $145 · HSBC $135<br><b style="color:#fbbf24;">⚠️ 股价$171 > 所有分析师目标价</b><br>共识中位$139.80，需等待上调</td>
+          <td style="font-size:11px;">光纤超级周期核心论点不变。G.652.D +456%，G.657.A2 +871%。全球缺口1.8亿芯km。但大行目标价严重滞后股价</td>
+          <td style="font-size:11px;color:var(--yellow);">ASML明日财报 · TSMC周四财报 · Q2财报 · 分析师上调潮</td>
+          <td style="font-size:11px;color:var(--red);">⚠️ 超越所有PT · 光纤价格见顶 · 资本开支缩减</td>
         </tr>
         <tr>
-          <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">COHR</span><br><small>Coherent</small></td>
-          <td style="font-weight:700;">$223</td>
-          <td style="color:#34d399;font-weight:700;">$275-310</td>
-          <td style="color:#34d399;font-weight:700;">+23~39%</td>
-          <td style="font-size:12px;">800G大规模出货+1.6T H2量产。法拉第旋转器全球垄断(稀土管制受益)。Stifel目标$235</td>
-          <td style="font-size:11px;color:var(--yellow);">1.6T量产(H2) · OFC 2026展会订单 · CW光源$4B市场</td>
-          <td style="font-size:11px;color:var(--red);">客户集中度 · 1.6T良率爬坡 · 稀土供应恢复</td>
+          <td style="font-weight:900;color:var(--text-dim);font-size:16px;">7</td>
+          <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">YOFC</span><br><small>长飞光纤(H)</small></td>
+          <td style="font-weight:700;">HK$215</td>
+          <td style="color:var(--text-dim);font-weight:900;font-size:15px;">47</td>
+          <td style="font-size:11px;">UBS Neutral ¥310 (A股，+122%上调)<br><b style="color:#fbbf24;">⚠️ A股¥364已超UBS目标¥310</b><br>仅UBS单家覆盖，缺乏大行共识</td>
+          <td style="font-size:11px;">中国光纤龙头。G.652.D +456%直接受益。2026E净利+161% YoY。全球缺口1.8亿芯km。35x 2027E PE vs 历史26x</td>
+          <td style="font-size:11px;color:var(--yellow);">Q1业绩(4月底) · 光纤价格 · A-H溢价收窄</td>
+          <td style="font-size:11px;color:var(--red);">A股超UBS目标 · 估值偏高 · 单家覆盖风险</td>
         </tr>
         <tr>
-          <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">SNDK</span><br><small>SanDisk</small></td>
-          <td style="font-weight:700;">$787</td>
-          <td style="color:#34d399;font-weight:700;">$940-1000</td>
-          <td style="color:#34d399;font-weight:700;">+19~27%</td>
-          <td style="font-size:12px;">NAND超级周期。Q3指引65-67%毛利(逻辑芯片级)。NAND合同价Q1 +38%。HBF新催化</td>
-          <td style="font-size:11px;color:var(--yellow);">4月涨价10%+ · Kioxia整合协同 · HBF产品发布</td>
-          <td style="font-size:11px;color:var(--red);">NAND价格周期见顶 · 中国存储产能扩张</td>
+          <td style="font-weight:900;color:var(--text-dim);font-size:16px;">8</td>
+          <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">AAOI</span><br><small>Applied Opto</small></td>
+          <td style="font-weight:700;">$148</td>
+          <td style="color:var(--text-dim);font-weight:900;font-size:15px;">46</td>
+          <td style="font-size:11px;">暂无大行覆盖/目标价<br>知识星球：核心AI客户均通过认证<br>纯主题驱动，缺乏机构背书</td>
+          <td style="font-size:11px;">1.6T收发器新玩家。AI数据中心光互联受益。5日+11%。高弹性高波动。适合小仓位投机</td>
+          <td style="font-size:11px;color:var(--yellow);">1.6T客户认证 · 光通信订单 · 财报验证</td>
+          <td style="font-size:11px;color:var(--red);">无大行覆盖 · 高波动 · 基本面未验证</td>
+        </tr>
+        <tr>
+          <td style="font-weight:900;color:var(--text-dim);font-size:16px;">9</td>
+          <td><span class="scenario-tag" style="background:rgba(251,191,36,0.15);color:#fbbf24;">COHR</span><br><small>Coherent</small></td>
+          <td style="font-weight:700;">$312</td>
+          <td style="color:var(--text-dim);font-weight:900;font-size:15px;">44</td>
+          <td style="font-size:11px;">近期无大行新覆盖/上调<br><b style="color:#fbbf24;">⚠️ 已超原目标区间$275-310</b><br>需等待分析师重新覆盖后重估</td>
+          <td style="font-size:11px;">800G出货4200-4500万+1.6T 2700万(2026)。法拉第旋转器垄断。但已超目标区间，且近期缺乏大行催化</td>
+          <td style="font-size:11px;color:var(--yellow);">1.6T量产(H2) · OFC确认"光学超级周期" · CW光源$4B</td>
+          <td style="font-size:11px;color:var(--red);">⚠️ 已超目标 · 无新覆盖 · 客户集中度 · 1.6T良率</td>
         </tr>
       </tbody>
     </table>
+    <div style="margin-top:10px;padding:10px;background:rgba(91,141,239,0.08);border-radius:8px;font-size:11px;color:var(--text-dim);">
+      <b style="color:var(--accent);">加权方法：</b>大行推荐强度(30%) + 研究员影响力(20%) + 目标价上行空间(20%) + 催化剂时效(15%) + 结构性论点(15%)<br>
+      <b style="color:var(--accent);">核心发现：</b>TSMC(BofA $500)+AVGO(GS确信榜$480)为双核，大行共识最强；SNDK获三家$1,000+目标价齐升，排名跃升；GLW/COHR/YOFC因股价超越分析师目标而降权<br>
+      <b style="color:var(--accent);">仓位建议：</b>Core(#1-2) 50-60% · Growth(#3-5) 25-35% · Speculative(#6-9) 10-15%
+    </div>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px;">
-    <!-- High Beta / Swing -->
+    <!-- Analyst Coverage Summary -->
     <div class="card">
-      <div class="card-title"><span class="icon">⚡</span> 高弹性波段仓 — Swing 25-35%</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">弹性大 · 事件驱动 · 跟随Phase节奏轮动</div>
+      <div class="card-title"><span class="icon">📊</span> 大行覆盖密度与评级一览</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:12px;">影响力大的研究员/机构 = 更高权重 · 多家覆盖 = 更高确信度</div>
       <table class="scenario-table">
-        <thead><tr><th>股票</th><th>价格</th><th>弹性</th><th>逻辑</th></tr></thead>
+        <thead><tr><th>股票</th><th>覆盖</th><th>最高评级</th><th>关键研究员</th></tr></thead>
         <tbody>
           <tr>
-            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">LITE</span><br><small>Lumentum</small></td>
-            <td>$765</td>
-            <td style="color:#a78bfa;font-weight:700;">★★★★★</td>
-            <td style="font-size:12px;">AI光学引擎。年内+900%。Q当季营收+85% YoY至$805M。BNP目标$1,040。但估值极高，适合波段</td>
+            <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">TSMC</span></td>
+            <td style="color:#34d399;font-weight:700;">4家+</td>
+            <td style="font-size:12px;"><b>BofA Buy $500</b></td>
+            <td style="font-size:11px;">Liu/Yang(8/10) · Deshpande(8/10) · Johnstone(6/10)</td>
           </tr>
           <tr>
-            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">AAOI</span><br><small>Applied Opto</small></td>
-            <td>$133</td>
-            <td style="color:#a78bfa;font-weight:700;">★★★★★</td>
-            <td style="font-size:12px;">1.6T收发器新玩家。Oracle $200M订单。Rosenblatt目标$140。FY25营收+83%。客户集中风险(MSFT 29%)</td>
+            <td><span class="scenario-tag" style="background:rgba(52,211,153,0.15);color:#34d399;">AVGO</span></td>
+            <td style="color:#34d399;font-weight:700;">3家+</td>
+            <td style="font-size:12px;"><b>GS CL Buy $480</b></td>
+            <td style="font-size:11px;">Schneider(8/10) · Flood(7/10) · Arya(BofA)</td>
           </tr>
           <tr>
-            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">TSMC</span><br><small>台积电ADR</small></td>
-            <td>$178</td>
-            <td style="color:#a78bfa;font-weight:700;">★★★★</td>
-            <td style="font-size:12px;">GS目标暗示+50%。资本开支上调至$200B+。2026-28营收增速35/31/29%。AI芯片绝对垄断</td>
+            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">SNDK</span></td>
+            <td style="color:#a78bfa;font-weight:700;">3家</td>
+            <td style="font-size:12px;"><b>Bernstein $1,250</b></td>
+            <td style="font-size:11px;">Bernstein · Cantor · Jefferies (4/9齐升)</td>
           </tr>
           <tr>
-            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">NVDA</span><br><small>Nvidia</small></td>
-            <td>$108</td>
-            <td style="color:#a78bfa;font-weight:700;">★★★★</td>
-            <td style="font-size:12px;">停火日涨8%。AI算力绝对龙头。情绪最强(GS扫描器)。$1.3T→$2T半导体TAM核心受益者</td>
+            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">LITE</span></td>
+            <td style="color:#a78bfa;font-weight:700;">4家</td>
+            <td style="font-size:12px;"><b>BNP $1,040</b></td>
+            <td style="font-size:11px;">JPM OW $950 · BNP $1,040 · Needham $850</td>
           </tr>
           <tr>
-            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">YOFC</span><br><small>长飞光纤(A/H)</small></td>
-            <td>¥268</td>
-            <td style="color:#a78bfa;font-weight:700;">★★★★</td>
-            <td style="font-size:12px;">中国光纤龙头。目标¥340。2026E净利35-45亿。全球光纤缺口16.7%。G.657.A2价格+871%</td>
+            <td><span class="scenario-tag" style="background:rgba(167,139,250,0.15);color:#a78bfa;">NVDA</span></td>
+            <td style="color:#a78bfa;font-weight:700;">广泛</td>
+            <td style="font-size:12px;">BofA组合推荐</td>
+            <td style="font-size:11px;">Arya(BofA) · GS情绪最强 · 全覆盖</td>
+          </tr>
+          <tr>
+            <td><span class="scenario-tag" style="background:rgba(251,191,36,0.15);color:#fbbf24;">GLW</span></td>
+            <td style="color:#fbbf24;font-weight:700;">3家</td>
+            <td style="font-size:12px;">共识Buy $139</td>
+            <td style="font-size:11px;">⚠️ 股价$171超所有PT · 等待上调</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-dim);">YOFC</td>
+            <td style="color:var(--text-dim);">1家</td>
+            <td style="font-size:12px;">UBS Neutral ¥310</td>
+            <td style="font-size:11px;">仅UBS · A股超目标 · 港股低估</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-dim);">AAOI</td>
+            <td style="color:var(--text-dim);">0家</td>
+            <td style="font-size:12px;">无大行覆盖</td>
+            <td style="font-size:11px;">纯主题驱动 · 知识星球信息源</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-dim);">COHR</td>
+            <td style="color:var(--text-dim);">待更新</td>
+            <td style="font-size:12px;">无近期新覆盖</td>
+            <td style="font-size:11px;">超目标区间 · 等待重新覆盖</td>
           </tr>
         </tbody>
       </table>
@@ -497,7 +651,7 @@ header h1 span { color: var(--accent); }
         <tbody>
           <tr style="background:rgba(37,99,235,0.08);">
             <td style="color:#5b8def;font-weight:700;">A 修复期</td>
-            <td>4-6月<br><small>现阶段</small></td>
+            <td>4-6月<br><small></small></td>
             <td style="font-size:12px;">
               <b>核心建仓60%</b><br>
               · 优先AVGO+GLW+COHR<br>
@@ -512,7 +666,7 @@ header h1 span { color: var(--accent); }
           </tr>
           <tr style="background:rgba(220,38,38,0.08);">
             <td style="color:#f87171;font-weight:700;">B 再升级</td>
-            <td>6-9月<br><small>金主获利</small></td>
+            <td>6-9月<br><small>现阶段</small></td>
             <td style="font-size:12px;">
               <b>波段减仓→弹药加大</b><br>
               · 卖出高Beta(LITE/AAOI)<br>
@@ -549,6 +703,42 @@ header h1 span { color: var(--accent); }
         A→B：停火到期未续约 / 油价重回$105+ / VIX突破30<br>
         B→C：Trump开始释放选举友好政策 / 油价开始回落 / Fed降息信号明确
       </div>
+    </div>
+  </div>
+
+  <!-- Sector Rotation Tracker -->
+  <div class="card" style="margin-bottom:20px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <div class="card-title" style="margin-bottom:0;"><span class="icon">🔄</span> 板块轮动 & 资金属性追踪</div>
+      <div style="font-size:11px;color:var(--text-dim);">蓝=机构 紫=CTA系统性 橙=散户 · 点击卡片展开详情</div>
+    </div>
+    <!-- Summary -->
+    <div class="sector-summary-bar" id="sectorSummary"></div>
+    <!-- Filter -->
+    <div class="sector-filter-bar">
+      <button class="sector-filter-btn active" id="sf_all" onclick="setSectorFilter('all')">全部板块</button>
+      <button class="sector-filter-btn" id="sf_strong" onclick="setSectorFilter('strong')">💎 机构主导</button>
+      <button class="sector-filter-btn" id="sf_caution" onclick="setSectorFilter('caution')">⚠️ 过热/分配</button>
+      <button class="sector-filter-btn" id="sf_avoid" onclick="setSectorFilter('avoid')">⛔ 规避</button>
+    </div>
+    <!-- Phase Legend -->
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;font-size:11px;">
+      <span>轮动阶段：</span>
+      <span class="phase-badge phase-A">早期积累</span><span style="color:var(--text-dim);font-size:10px;">机构悄买·无散户</span>
+      <span style="color:var(--text-dim);">→</span>
+      <span class="phase-badge phase-B">动量阶段</span><span style="color:var(--text-dim);font-size:10px;">机构+CTA共振</span>
+      <span style="color:var(--text-dim);">→</span>
+      <span class="phase-badge phase-C">过热追高</span><span style="color:var(--text-dim);font-size:10px;">散户大量涌入</span>
+      <span style="color:var(--text-dim);">→</span>
+      <span class="phase-badge phase-D">机构分配</span><span style="color:var(--text-dim);font-size:10px;">出货给散户</span>
+      <span style="color:var(--text-dim);">→</span>
+      <span class="phase-badge phase-E">持续流出</span>
+    </div>
+    <!-- Grid -->
+    <div class="sector-grid" id="sectorRotationGrid"></div>
+    <!-- Update hint -->
+    <div style="margin-top:8px;padding:8px 12px;background:rgba(91,141,239,0.06);border-radius:6px;font-size:11px;color:var(--text-dim);">
+      💡 <b style="color:var(--accent);">更新来源：</b>GS Prime Book周报 · JPMorgan Retail Radar · CTA定位报告 · ETF资金流向数据 · 大行研报 | 建议每周更新一次 sectorRotation 数组
     </div>
   </div>
 
@@ -594,43 +784,43 @@ header h1 span { color: var(--accent); }
 
   <!-- Market Data Snapshot -->
   <div class="card" style="margin-bottom:20px;">
-    <div class="card-title"><span class="icon">📊</span> 实时市场数据快照（4/8更新）</div>
+    <div class="card-title"><span class="icon">📊</span> 实时市场数据快照（4/10更新）</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;">
       <div style="padding:12px;background:rgba(52,211,153,0.08);border-radius:8px;">
         <div style="font-size:11px;color:var(--text-dim);">S&P 500</div>
-        <div style="font-size:24px;font-weight:800;color:#34d399;">6,783 <small style="font-size:13px;">+2.5%</small></div>
-        <div style="font-size:11px;color:var(--text-dim);">VIX 20.18 (战前水平)</div>
+        <div style="font-size:24px;font-weight:800;color:#34d399;">6,824 <small style="font-size:13px;">+0.62%</small></div>
+        <div style="font-size:11px;color:var(--text-dim);">VIX 19.33 (-8%) · CTA触发位6,864</div>
       </div>
       <div style="padding:12px;background:rgba(248,113,113,0.08);border-radius:8px;">
         <div style="font-size:11px;color:var(--text-dim);">WTI原油</div>
-        <div style="font-size:24px;font-weight:800;color:#f87171;">$93 <small style="font-size:13px;">-16%</small></div>
-        <div style="font-size:11px;color:var(--text-dim);">停火前$117 · Brent $91</div>
+        <div style="font-size:24px;font-weight:800;color:#f87171;">$99-101 <small style="font-size:13px;">+3-7%</small></div>
+        <div style="font-size:11px;color:var(--text-dim);">停火后反弹·GS：围绕更高平台波动</div>
       </div>
       <div style="padding:12px;background:rgba(251,191,36,0.08);border-radius:8px;">
         <div style="font-size:11px;color:var(--text-dim);">黄金</div>
-        <div style="font-size:24px;font-weight:800;color:#fbbf24;">$4,713 <small style="font-size:13px;">+4.4%</small></div>
-        <div style="font-size:11px;color:var(--text-dim);">避险属性丧失(与SPX正相关+0.4)</div>
+        <div style="font-size:24px;font-weight:800;color:#fbbf24;">$4,713 <small style="font-size:13px;">持平</small></div>
+        <div style="font-size:11px;color:var(--text-dim);">与SPX正相关+0.4 · 避险属性弱化</div>
       </div>
       <div style="padding:12px;background:rgba(91,141,239,0.08);border-radius:8px;">
-        <div style="font-size:11px;color:var(--text-dim);">降息概率(12月前)</div>
-        <div style="font-size:24px;font-weight:800;color:#5b8def;">43% <small style="font-size:13px;">↑29%</small></div>
-        <div style="font-size:11px;color:var(--text-dim);">停火前仅14%</div>
+        <div style="font-size:11px;color:var(--text-dim);">CPI（3月）</div>
+        <div style="font-size:24px;font-weight:800;color:#5b8def;">3.8%<small style="font-size:13px;"> 核心2.8%</small></div>
+        <div style="font-size:11px;color:var(--text-dim);">完美命中预期 · 降息概率约50% ↑</div>
       </div>
       <div style="padding:12px;background:rgba(167,139,250,0.08);border-radius:8px;">
         <div style="font-size:11px;color:var(--text-dim);">CTA潜在买盘</div>
-        <div style="font-size:24px;font-weight:800;color:#a78bfa;">$1,480亿</div>
-        <div style="font-size:11px;color:var(--text-dim);">全球股票最大系统性资金</div>
+        <div style="font-size:24px;font-weight:800;color:#a78bfa;">$340亿/周</div>
+        <div style="font-size:11px;color:var(--text-dim);">3动量阈值全转正 · 空头$300亿待回补</div>
       </div>
-      <div style="padding:12px;background:rgba(248,113,113,0.08);border-radius:8px;">
-        <div style="font-size:11px;color:var(--text-dim);">GS杠杆率</div>
-        <div style="font-size:24px;font-weight:800;color:#f87171;">310%</div>
-        <div style="font-size:11px;color:var(--text-dim);">5年99%分位 · 弹弓效应</div>
+      <div style="padding:12px;background:rgba(52,211,153,0.08);border-radius:8px;">
+        <div style="font-size:11px;color:var(--text-dim);">Hartnett Bull & Bear</div>
+        <div style="font-size:24px;font-weight:800;color:#34d399;">7.4 <small style="font-size:13px;">↓ from 8.7</small></div>
+        <div style="font-size:11px;color:var(--text-dim);">卖出信号终结 · 但无买入信号</div>
       </div>
     </div>
-    <div style="margin-top:12px;padding:10px;background:rgba(52,211,153,0.08);border-radius:8px;font-size:12px;">
-      <b style="color:var(--green);">4/8关键变化：</b>
-      停火达成→油跌16%→SPX+2.5%→VIX回战前→降息预期翻3倍。但：霍尔木兹仅恢复7%通行、停火脆弱(已有违反)、BofA客户连续4周净卖出。
-      <b>反弹性质：仓位驱动，非基本面驱动。</b>
+    <div style="margin-top:12px;padding:10px;background:rgba(91,141,239,0.08);border-radius:8px;font-size:12px;">
+      <b style="color:var(--accent);">4/10关键变化：</b>
+      CPI完美命中→VIX跌破20→Mark Newton升级bullish（"反弹刚开始"）→Hartnett卖出信号正式终结（7.4但无买入信号）→伊斯兰堡谈判启动→SPX 6,824逼近CTA触发位6,864。
+      <b>下一催化剂：4/11谈判结果 + 4/14财报季开启（大行+科技）。</b>
     </div>
   </div>
 </div>
@@ -685,43 +875,231 @@ const GROUPS = {
   catalyst:     { label: '🚀 行业催化', color: '#06b6d4' }
 };
 
-// Initial factors based on current market analysis (2026-04-09)
+// ============================================================
+//  SECTOR ROTATION DATA  (更新：每周手动维护)
+//  flows: -5(持续大幅流出) ~ +5(持续大幅流入)
+//  money: inst(机构)/cta(CTA系统性)/retail(散户) 占比%, 合计100
+//  phase: accumulation(早期积累) | momentum(动量阶段) | hot(过热追高) | distribution(分配流出) | outflow(持续流出)
+// ============================================================
+let sectorRotation = [
+  {
+    id: 'ai_chips', name: 'AI/芯片算力', icon: '🤖',
+    tickers: 'NVDA · AVGO · TSM · AMD · QCOM',
+    flows: { w1: 3, w4: 3, w12: 4 },
+    money: { inst: 55, cta: 32, retail: 13 },
+    phase: 'momentum',
+    picks: [
+      { tk: 'TSM', src: 'BofA Buy $500', hot: true },
+      { tk: 'AVGO', src: 'GS确信榜 $480', hot: true },
+      { tk: 'ASML', src: 'JPM OW €1,515' },
+      { tk: 'NVDA', src: 'BofA 15-20x推荐' },
+      { tk: 'AMD', src: 'Citi Neutral $264' }
+    ],
+    note: 'GS CTA+4标准差强买入($83.5bn/周)·BofA上调TSMC目标$500·GS确信榜AVGO $480·ASML/TSMC本周财报双催化·宏观基金买入速度2025年5月以来最快·Oppenheimer:科技PEG历史首次低于大盘=价值买入区',
+    updated: '04/14'
+  },
+  {
+    id: 'energy_tech', name: '能源科技/核电', icon: '⚡',
+    tickers: 'CEG · VST · PWR · NRG · ETR',
+    flows: { w1: 2, w4: 3, w12: 4 },
+    money: { inst: 72, cta: 18, retail: 10 },
+    phase: 'accumulation',
+    picks: [
+      { tk: 'CEG', src: 'GS核电首选·AI用电', hot: true },
+      { tk: 'VST', src: '数据中心电力需求' },
+      { tk: 'PWR', src: '电力基础设施核心' },
+      { tk: 'NRG', src: '天然气发电受益' }
+    ],
+    note: '机构继续积累·DB:海湾AI数据中心受IRGC攻击威胁→美国本土电力基础设施稀缺性提升·AI算力用电需求+散热创新·无散户参与=信号质量最高',
+    updated: '04/14'
+  },
+  {
+    id: 'mega_tech', name: '大型科技/互联网', icon: '🌐',
+    tickers: 'GOOG · META · AMZN · MSFT · AAPL',
+    flows: { w1: 2, w4: 2, w12: 3 },
+    money: { inst: 52, cta: 33, retail: 15 },
+    phase: 'momentum',
+    picks: [
+      { tk: 'GOOG', src: 'GS Flood重点回补', hot: true },
+      { tk: 'AMZN', src: 'GS Flood重点回补', hot: true },
+      { tk: 'META', src: 'Oppenheimer PEG<1' },
+      { tk: 'MSFT', src: 'Wilson优质成长' },
+      { tk: 'NFLX', src: 'GS Buy·周四财报' }
+    ],
+    note: 'Oppenheimer:科技PEG 0.7-0.9x接近历史买入区·Wilson:超大规模云厂商=优质成长首选·Q1 EPS+12.6% YoY(连续第6季双位数)·GS Flood:多头基金将买回半导体/光学/科技',
+    updated: '04/14'
+  },
+  {
+    id: 'financials', name: '金融/银行', icon: '🏦',
+    tickers: 'GS · JPM · BAC · WFC · MS',
+    flows: { w1: 4, w4: 3, w12: 1 },
+    money: { inst: 40, cta: 50, retail: 10 },
+    phase: 'hot',
+    picks: [
+      { tk: 'GS', src: '4/14财报·回购恢复', hot: true },
+      { tk: 'JPM', src: '4/14财报·Wilson周期首选', hot: true },
+      { tk: 'BAC', src: '4/14财报·净息差扩大' },
+      { tk: 'WFC', src: '4/14财报' },
+      { tk: 'C', src: '4/14财报·首批静默期结束' }
+    ],
+    note: '⭐4/14银行财报日(GS/C/JPM/WFC/BAC)·静默期结束=首批回购恢复·$4,100亿YTD授权待执行·Wilson:金融股周期性首选·BofA:2024年12月以来首次净流入·CTA仍主导但机构加入',
+    updated: '04/14'
+  },
+  {
+    id: 'defense', name: '工业/国防', icon: '🛡️',
+    tickers: 'RTX · LMT · NOC · GD · HII',
+    flows: { w1: 0, w4: 2, w12: 3 },
+    money: { inst: 65, cta: 25, retail: 10 },
+    phase: 'accumulation',
+    picks: [
+      { tk: 'RTX', src: 'Matejka超配国防', hot: true },
+      { tk: 'LMT', src: '地缘肥尾效应受益' },
+      { tk: 'NOC', src: '海湾AI+国防交叉' },
+      { tk: 'GD', src: 'DB:双用途技术' }
+    ],
+    note: '封锁弱于预期→短期获利了结·但Matejka:军事冲突肥尾效应仍在·DB:海湾AI+国防交叉受益·机构仍主导·停火不续约则重新加速',
+    updated: '04/14'
+  },
+  {
+    id: 'energy_oil', name: '能源/油气', icon: '🛢️',
+    tickers: 'XLE · CVX · XOM · OXY · COP',
+    flows: { w1: 3, w4: 2, w12: 1 },
+    money: { inst: 32, cta: 55, retail: 13 },
+    phase: 'hot',
+    picks: [
+      { tk: 'PARR', src: 'GS↑Buy·西海岸结构性紧', hot: true },
+      { tk: 'DK', src: 'GS↑Buy·RIN价格上行' },
+      { tk: 'NUE', src: 'GS Buy·去全球化受益' },
+      { tk: 'FCX', src: 'GS Buy·Grasberg重启' },
+      { tk: 'XOM', src: 'Mehta Buy筛选' }
+    ],
+    note: 'WTI $97·封锁推高+3船通过缓和·GS商品CTA能源净多头激增·GS Mehta:10只Buy评级能源股筛选·Kaneva:20%全球石油贸易经霍尔木兹·CTA系统性买入主导·注意:封锁缓解则快速反转',
+    updated: '04/14'
+  },
+  {
+    id: 'healthcare', name: '医疗/生技', icon: '🏥',
+    tickers: 'LLY · UNH · AMGN · JNJ · MRK',
+    flows: { w1: 0, w4: 1, w12: 2 },
+    money: { inst: 62, cta: 18, retail: 20 },
+    phase: 'accumulation',
+    picks: [
+      { tk: 'LLY', src: 'GS:GLP-1长期趋势', hot: true },
+      { tk: 'UNH', src: '防御首选·低beta' },
+      { tk: 'AMGN', src: 'GS:大型生物制药MSD+增长' },
+      { tk: 'JNJ', src: '关税敞口低·避险' }
+    ],
+    note: 'Matejka:滞胀偏好防御(公用/医疗)·GS生命科学1Q26最弱季节性=不代表全年·中国刺激追踪器关注H2需求恢复·机构防御性配置不变',
+    updated: '04/14'
+  },
+  {
+    id: 'small_theme', name: '小票主题/无人机', icon: '🚀',
+    tickers: 'RKLB · OKLO · ACHR · JOBY · LUNR',
+    flows: { w1: -1, w4: -1, w12: 2 },
+    money: { inst: 14, cta: 20, retail: 66 },
+    phase: 'distribution',
+    picks: [
+      { tk: 'NBIS', src: 'DA Davidson $200·AI基础设施' },
+      { tk: 'LUNR', src: '月度+28%·NASA合同' },
+      { tk: 'RKLB', src: '发射服务·散户主导' }
+    ],
+    note: '散户仍主导·Nomura:反弹本质是空头回补非新多头·底部基础不稳·LUNR月度+28%但缺机构参与·主题热度在CTA强买盘环境下略有改善但质量差',
+    updated: '04/14'
+  },
+  {
+    id: 'consumer', name: '消费/零售', icon: '🛒',
+    tickers: 'WMT · COST · TGT · HD · AMZN(零售)',
+    flows: { w1: -1, w4: -2, w12: -1 },
+    money: { inst: 20, cta: 28, retail: 52 },
+    phase: 'outflow',
+    picks: [
+      { tk: 'PM', src: 'GS防御首选·定价权', hot: true },
+      { tk: 'MNST', src: 'GS防御首选·油价对冲' },
+      { tk: 'PEP', src: 'GS防御首选' },
+      { tk: 'WSM', src: 'GS↑Buy·高端家居韧性' }
+    ],
+    note: 'Citi:消费板块负面修正偏向加剧·GS de la Grense:微观基本面仍弱·Michigan 48.7·油价COGS逆风持续·GS:WSM升Buy但BBY降Sell=板块内部分化·PM/MNST/PEP防御首选',
+    updated: '04/14'
+  },
+  {
+    id: 'reits', name: '房地产/REITs', icon: '🏠',
+    tickers: 'VNQ · AMT · PLD · SPG · O',
+    flows: { w1: -2, w4: -2, w12: -2 },
+    money: { inst: 18, cta: 20, retail: 62 },
+    phase: 'outflow',
+    picks: [],
+    note: 'JPM Salopek:BDC z=3.29为12个指标中最高=私人信贷压力·CMBS逾期率7.55%·10Y@4.33%高位·CTA债券仍净空但在削减·利率下行空间有限·最强规避板块',
+    updated: '04/14'
+  }
+];
+
+let sectorFilter = 'all'; // all | strong | momentum | caution | avoid
+
+// ============================================================
+//  SECTOR ROTATION HELPERS
+// ============================================================
+const PHASE_CONFIG = {
+  accumulation: { label: '早期积累', cls: 'phase-A', order: 1, summary: '机构悄买·无散户·最强信号' },
+  momentum:     { label: '动量阶段', cls: 'phase-B', order: 2, summary: '机构+CTA共振·趋势确立' },
+  hot:          { label: '过热追高', cls: 'phase-C', order: 3, summary: '散户大量涌入·动量末期' },
+  distribution: { label: '机构分配', cls: 'phase-D', order: 4, summary: '机构出货·散户接盘' },
+  outflow:      { label: '持续流出', cls: 'phase-E', order: 5, summary: '空仓观望' }
+};
+
+function getSignalFromSector(s) {
+  const instPct = s.money.inst;
+  const retailPct = s.money.retail;
+  const ctaPct = s.money.cta;
+  const avgFlow = (s.flows.w1 + s.flows.w4 + s.flows.w12) / 3;
+  if (s.phase === 'outflow') return { cls: 'signal-avoid', label: '⛔ 规避', predict: '持续资金流出，空仓等待' };
+  if (s.phase === 'distribution') return { cls: 'signal-avoid', label: '🚨 减仓', predict: '机构出货散户承接，顶部特征' };
+  if (s.phase === 'hot' && retailPct > 50) return { cls: 'signal-caution', label: '⚠️ 谨慎', predict: '散户追高末期，等待回调再考虑' };
+  if (s.phase === 'accumulation' && instPct > 55) return { cls: 'signal-strong', label: '💎 强信号', predict: '机构早期建仓，散户未发现，最佳布局窗口' };
+  if (s.phase === 'accumulation' && instPct > 40) return { cls: 'signal-buy', label: '✅ 建仓', predict: '机构主导早期买入，分批布局' };
+  if (s.phase === 'momentum' && instPct > 45) return { cls: 'signal-buy', label: '✅ 跟进', predict: '机构驱动动量确立，可跟进' };
+  if (s.phase === 'momentum' && ctaPct > 50) return { cls: 'signal-hold', label: '📊 观察', predict: 'CTA系统性动量，关注持续性' };
+  if (s.phase === 'momentum') return { cls: 'signal-hold', label: '📊 持有', predict: '动量延续，关注资金属性变化' };
+  return { cls: 'signal-hold', label: '📊 中性', predict: '等待更清晰信号' };
+}
+
+function flowColor(v) { return v >= 0 ? '#34d399' : '#f87171'; }
+
+// Initial factors based on current market analysis (2026-04-14)
 let factors = [
   // Geopolitical
-  { id: 'ceasefire', name: '伊以停火进展', sub: '停火现裂痕·伊朗指控违约3条款·周六伊斯兰堡谈判', group: 'geopolitical', score: 0, weight: 9, note: '停火达成但伊朗议会指控美方违约3条款（以续打黎巴嫩/无人机被击落/铀浓缩），霍尔木兹仅4艘油轮通行，周六VP Vance领队直接谈判' },
-  { id: 'trump_donors', name: 'Trump金主利益', sub: '特朗普电话要求内塔尼亚胡缩减黎巴嫩打击', group: 'geopolitical', score: 1, weight: 7, note: '特朗普为保障谈判要求以色列减少黎巴嫩打击，显示谈判优先；但油价仍高（$99+）利好能源金主' },
-  { id: 'hormuz', name: '霍尔木兹海峡', sub: '仅4艘油轮·WTI $99反弹3%·GS预测全年均价$100+', group: 'geopolitical', score: -3, weight: 8, note: '停火脆弱，霍尔木兹远未恢复正常；沙特Yanbu港"尚未受影响"；加拿大原油溢价创2年多新高' },
-  { id: 'trade_rhythm', name: '2018贸易战节奏映射', sub: '18月4轮升级-缓和周期·处于缓和窗口', group: 'geopolitical', score: 0, weight: 6, note: '无直接新数据，中性' },
-  { id: 'midterm', name: '2026中期选举周期', sub: 'H1喂金主(高油价)→H2喂选民(压油拉股)·过渡信号', group: 'geopolitical', score: 1, weight: 9, note: '上半年仍在"喂金主"阶段（高油价），周六谈判暗示下半年转向布局开始；选举周期逻辑完好' },
-  { id: 'oil_redirect', name: '海湾→美湾石油转向', sub: '加拿大原油溢价2年多新高·转向仍不完整', group: 'geopolitical', score: -1, weight: 6, note: '全球买家转向美湾/加拿大替代油，但霍尔木兹仍大部分关闭，供应缺口持续' },
+  { id: 'ceasefire', name: '伊以停火进展', sub: '谈判破裂但双方仍沟通·讨论第二轮面对面会谈·封锁定性"施压工具"', group: 'geopolitical', score: -3, weight: 9, note: '谈判破裂但美伊仍在沟通，讨论第二轮面对面会谈；伊朗将首轮定性为"第一轮"暗示将有后续；封锁力度弱于预期（仅限伊朗港口）；黎以代表今日国务院首次会面——外交窗口重新打开' },
+  { id: 'trump_donors', name: 'Trump金主利益', sub: 'WTI $97·封锁在执行·Ackman启动$10bn双IPO+$64bn UMG收购', group: 'geopolitical', score: 1, weight: 7, note: '封锁在执行但WTI回落至$97；能源/防务金主获利中；Ackman启动$10bn双IPO路演+$64bn UMG收购=金融大鳄极端看多/扩张行为；H1喂金主逻辑执行中' },
+  { id: 'hormuz', name: '霍尔木兹海峡', sub: '关键改善：3艘船成功通过·封锁仅针对伊朗港口·非全面关闭海峡', group: 'geopolitical', score: -2, weight: 8, note: '3艘船（含2艘受制裁油轮）成功通过海峡！封锁仅针对驶往伊朗港口的船只，非全面关闭海峡；伊朗称封锁"构成海盗行为"但未采取军事反制；通行恢复速度远超预期' },
+  { id: 'trade_rhythm', name: '2018贸易战节奏映射', sub: '中国145%关税·中国拟向伊朗送防空系统·韩国出口+36.7%', group: 'geopolitical', score: -2, weight: 6, note: '中国145%关税持续；中国准备向伊朗运送防空系统；但韩国出口+36.7%显示亚洲贸易韧性；DXY跌至97.86暗示美元走弱/全球资金再配置' },
+  { id: 'midterm', name: '2026中期选举周期', sub: 'H1喂金主阶段·封锁力度可控暗示政治考量——不希望市场崩溃', group: 'geopolitical', score: 0, weight: 9, note: '仍在H1喂金主阶段；封锁力度可控（仅限伊朗港口而非全海峡）暗示政治考量——不希望市场崩溃；匈牙利大选反现任趋势值得关注' },
+  { id: 'oil_redirect', name: '海湾→美湾石油转向', sub: 'WTI $97(从$104回落$7)·SPR释放850万桶·封锁影响弱于预期', group: 'geopolitical', score: -1, weight: 6, note: 'WTI从$104回落至$97（-6.6%）；SPR释放850万桶；封锁对全球通行影响弱于预期（3船成功通过）；Baker Hughes 411口井持平' },
 
   // Macro
-  { id: 'fed', name: 'Fed政策预期', sub: 'PCE上调至2.7%·维持3.5-3.75%·4/28-29 FOMC', group: 'macro', score: -1, weight: 8, note: 'Fed维持利率不变，PCE和核心PCE预期上调至2.7%，今年仅暗示降息一次但时点不明' },
-  { id: 'fed_chair', name: '联储换届·沃士新政', sub: '5/15就任·降息至3%+主动抛MBS·"QT换降息"框架', group: 'macro', score: -2, weight: 9, note: '沃士(Warsh)5月15日接替鲍威尔。政策框架："QT-for-cuts"—降短端利率至3%，同时主动抛售$2T MBS缩表。熊市陡峭化已启动：短端降/长端升，压制成长股估值。历届换届后美股均现阶段性下跌（共性：政策不确定性折价+新主席建立公信力偏鹰）。沃士额外风险：大幅减少前瞻指引沟通，市场失去"锚"。受压板块：房地产/REITs/成长股；受益：银行（利差扩大）' },
-  { id: 'earnings', name: 'Q1财报季', sub: 'Q1 GDP约+3%·下周财报季开启·历史对应EPS双位数增长', group: 'macro', score: 1, weight: 7, note: 'Q4 GDP终值下修至0.5%但Q1估约+3%，初请失业金21万韧性，财报季是近期关键催化剂' },
-  { id: 'oil_price', name: '油价走向', sub: 'WTI $99-101(+3-7%)·停火脆弱=更高平台波动', group: 'macro', score: -2, weight: 7, note: '停火后油价从$94反弹至$99+，GS Pasquariello：大宗商品围绕更高平台波动；高油价是通胀和经济的持续逆风' },
-  { id: 'recession', name: '衰退概率', sub: 'Q1 GDP~+3%·劳动力韧性·消费者信心深度受损', group: 'macro', score: 0, weight: 6, note: '劳动力市场仍韧性（4周均值20.95万），但日本/英国/德国消费者信心均创近年低，DB指出1973年重演条件不成立' },
+  { id: 'fed', name: 'Fed政策预期', sub: '利率3.5-3.75%不变·4/28 FOMC预期按兵·油价回落减轻通胀压力', group: 'macro', score: -1, weight: 8, note: 'Fed维持3.50-3.75%；4月FOMC(4/28-29)预期按兵不动；油价从$104回落至$97减轻通胀压力；核心CPI低于预期(+0.196% vs 0.3%)；ING/BofA/Nomura三方确认通胀暂时性判断' },
+  { id: 'fed_chair', name: '联储换届·沃士新政', sub: 'Warsh听证会仍推迟·DXY暴跌至97.86暗示宽松预期增强', group: 'macro', score: -2, weight: 9, note: 'Warsh听证会仍推迟（新日期未定）；但DXY从100暴跌至97.86（-2.1%）暗示美元走弱/宽松预期增强；人民币升值至6.83创三年高；CIPS单日破万亿' },
+  { id: 'earnings', name: 'Q1财报季', sub: '今日JPM/C/WFC/BLK·明日BAC/MS/ASML·周四TSMC·EPS+12.6%', group: 'macro', score: 3, weight: 7, note: '今日JPM/C/WFC/BLK财报日——银行首批退出静默期+回购恢复；明日ASML客户意向关键；周四TSMC（BofA目标$500）；Q1 EPS+12.6% YoY，利润率13.2%' },
+  { id: 'oil_price', name: '油价走向', sub: 'WTI $97.45(从$104回落$7)·封锁力度弱于预期·通胀暂时性确认', group: 'macro', score: -2, weight: 7, note: 'WTI $97.45（从$104回落-6.6%）；封锁仅限伊朗港口，非全海峡关闭；BofA量化：10%油价冲击对GDP影响仅约5bp；ING/BofA/Nomura三方确认通胀暂时性；但仍高于$90水平' },
+  { id: 'recession', name: '衰退概率', sub: '密歇根48.7仍弱·但油价回落减轻滞胀·GDP tracking 1.9%', group: 'macro', score: -2, weight: 6, note: '密歇根48.7仍弱；但油价从$104回落至$97减轻滞胀压力；GDP tracking 1.9%；人民币升值至6.83暗示全球资金再配置；BofA量化当前石油依赖度仅1970年代三分之一' },
 
   // Flow
-  { id: 'cta', name: 'CTA买入潜力', sub: 'CTA空头$300亿·买入$340亿/周·3动量阈值全转正', group: 'flow', score: 4, weight: 9, note: 'GS Flood：CTA空头约$300亿，模型预测未来一周买入$340亿，所有三个动量阈值全面转正，MOC买入不平衡+$38亿' },
-  { id: 'leverage', name: 'GS杠杆率', sub: '310%·5年期99百分位·历史极端', group: 'flow', score: -2, weight: 7, note: '总杠杆率310%（5年期99百分位），系统脆弱性极高；但去杠杆完成后弹弓效应强' },
-  { id: 'etf_short', name: 'ETF空头仓位', sub: '回补7.4%·2020年8月以来最大', group: 'flow', score: 3, weight: 8, note: 'ETF空头回补7.4%（2020年8月以来最大），Prime Book空头97百分位，仍有大量空头可供回补' },
-  { id: 'retail', name: '散户情绪', sub: 'JPM：活跃度1.2百分位·ETF敞口10月最低', group: 'flow', score: 2, weight: 5, note: 'JPM Retail Radar：散户从"逢低买入"转为"逢高卖出"，活跃度1.2百分位，ETF敞口10月最低 = 极端悲观逆向信号' },
+  { id: 'cta', name: 'CTA买入潜力', sub: 'CTA+4σ强买入确认执行·SPX从6781反弹至6890验证·宏观基金最快买入', group: 'flow', score: 4, weight: 9, note: 'GS CTA +4标准差强买入确认执行中；SPX从6,781反弹至6,890（+1.6%）验证CTA系统性买盘；宏观对冲基金买入速度2025年5月以来最快；趋势信号全面转正' },
+  { id: 'leverage', name: 'GS杠杆率', sub: '310%·5年期99百分位·系统脆弱性仍高', group: 'flow', score: -3, weight: 7, note: '总杠杆率310%（5年期99百分位）不变；系统脆弱性仍高；但VIX回落至18.24减轻短期去杠杆压力' },
+  { id: 'etf_short', name: 'ETF空头仓位', sub: '今日银行首批退出静默期·回购窗口开启·4/28全面恢复$150-200亿/周', group: 'flow', score: 2, weight: 8, note: '今日JPM/C/WFC/BLK财报后首批退出静默期；回购窗口正式开启；$4,100亿YTD授权待执行；4月28日全面恢复→$150-200亿/周回购潮；CTA+回购双重技术支撑窗口形成中' },
+  { id: 'retail', name: '散户情绪', sub: '密歇根48.7极弱但逆向信号·市场反弹中情绪有望修复', group: 'flow', score: 1, weight: 5, note: '密歇根48.7极弱但历史上极端低点是逆向买入信号；市场反弹1.5%+VIX暴跌17%有助情绪修复；GS L/S 73.3%（历史第15百分位）极度悲观=逆向买入信号' },
 
   // Technical
-  { id: 'spx_level', name: 'SPX关键位', sub: 'SPX 6,785(+2.55%)·CTA下一触发6,864尚未穿越', group: 'technical', score: 2, weight: 8, note: 'SPX收6,785，Citi：CTA下一触发E-mini 6,864尚未穿越，站稳200MA上方，趋势向上但面临阻力' },
-  { id: 'vix', name: 'VIX波动率', sub: '~21·区间19.91-22.17·从高位回落', group: 'technical', score: 1, weight: 7, note: 'VIX从恐慌高位回落至~21，仍偏高但下行趋势；MOVE指数从115降至约78' },
-  { id: 'breadth', name: '市场宽度', sub: '半导体领涨·整体上涨·软件vs半导体-8.5%历史最大差', group: 'technical', score: 1, weight: 5, note: '市场整体上涨，半导体vs软件(-8.5%历史最大差)明确轮动方向' },
+  { id: 'spx_level', name: 'SPX关键位', sub: 'SPX ~6,890(+1.5%)·已突破CTA触发位6,864·6,800支撑守住', group: 'technical', score: 1, weight: 8, note: 'SPX约6,890（+1.5%反弹），已突破CTA触发位6,864；6,800支撑守住；上方阻力6,950-7,000；历史上地缘冲击后82%逢弱买入获正回报（JPM Matejka）验证中' },
+  { id: 'vix', name: 'VIX波动率', sub: 'VIX从22暴跌至18.24(-17%)·重新跌破20关口·恐慌脉冲完全消退', group: 'technical', score: 2, weight: 7, note: 'VIX从22.0暴跌至18.24（-17%），重新跌破20关键关口！封锁冲击确认为短暂脉冲而非趋势性恐慌；恐慌情绪完全消退速度极快' },
+  { id: 'breadth', name: '市场宽度', sub: '反弹中板块轮动·金融股今日主角·国际市场技术面仍优于美国', group: 'technical', score: 0, weight: 5, note: '反弹中金融股今日主角（财报日）；板块轮动而非普涨；Newton认为国际市场（欧洲/亚洲）技术面优于美国' },
 
   // Signals
-  { id: 'ackman', name: '阿克曼信号', sub: '3/30翻多持续有效·今日无新动态', group: 'signal', score: 0, weight: 9, note: '3/30翻多信号仍有效（历史3次底部），但今日无新动态，保守中性' },
-  { id: 'wilson', name: '大行首席判断', sub: 'Privorotsky:不喜欢当前价位 vs Flood:CTA买入潮即将', group: 'signal', score: 0, weight: 6, note: 'GS内部分歧：Privorotsky不追涨，Flood看好CTA买入，相互抵消；综合中性' },
+  { id: 'ackman', name: '阿克曼信号', sub: 'Ackman $10bn双IPO路演+$64bn UMG收购=极端看多扩张·GS L/S 73.3%逆向', group: 'signal', score: 2, weight: 9, note: 'Ackman启动Pershing Square双IPO路演（目标$10bn，4/28定价）+$64bn收购UMG——转型"伯克希尔模式"，这是极端看多/扩张行为，绝非防守姿态；GS L/S 73.3%（历史第15百分位=极度悲观=强逆向买入信号）' },
+  { id: 'wilson', name: '大行首席判断', sub: 'JPM逢弱买入验证·Wilson看多·多头阵营6人vs空头仅Hartnett', group: 'signal', score: 1, weight: 6, note: 'JPM Matejka逢弱买入+82%正回报——今日+1.5%验证中；Wilson看多哑铃策略；市场今日反弹验证多头观点；多头阵营6人vs空头仅Hartnett 1人；Tom Lee底部已至但下调目标7300' },
 
   // Catalyst
-  { id: 'fiber', name: '光纤超级周期', sub: 'G.652.D +325%·G.657.A2 +843%·缺口16.4%延续至2027', group: 'catalyst', score: 5, weight: 8, note: '全球光纤需求5.77亿芯公里，缺口1.8亿（16.4%）；Meta/康宁$60亿长约；军用无人机新兴需求；GLW/COHR/YOFC直接受益' },
-  { id: 'nand', name: 'NAND超级周期', sub: 'NAND +151% YoY·DRAM +183% YoY·TAM上调$1.3T', group: 'catalyst', score: 4, weight: 7, note: 'BofA：半导体TAM从$1T上调至$1.3T，2030年达$2T（+20% CAGR）；SNDK逻辑芯片级别毛利' },
-  { id: 'ai_capex', name: 'AI资本开支', sub: 'Anthropic ARR $190亿→$300亿(1个月)·Meta+CoreWeave $210亿', group: 'catalyst', score: 4, weight: 8, note: 'Anthropic ARR一个月翻1.5倍；Meta+CoreWeave $210亿AI协议；Amazon $250亿密西西比数据中心；TSMC CapEx上调至$200亿+' },
-  { id: 'rare_earth', name: '稀土/出口管制', sub: 'H200对华出口停滞·ENFORCE法案·DeepSeek V4转昇腾', group: 'catalyst', score: -1, weight: 5, note: 'NVIDIA无法向中国发货H200；国会ENFORCE法案审查；DeepSeek V4将基于华为昇腾CANN训练，中国AI自主化加速' }
+  { id: 'fiber', name: '光纤超级周期', sub: 'G.652.D +456%·G.657.A2 +871%·GLW SMF-28e+ $12.8/km(+184%)', group: 'catalyst', score: 5, weight: 8, note: '最新（4/13）：G.652.D 100元/芯km（+456% vs 2025年底）；G.657.A2 340元（+871%，无人机+AI双驱动）；GLW SMF-28e+ $12.8/km（+184%）；全球缺口1.8亿芯公里（16.4%）；1.6T收发器2026年出货20M单位（从2.5M）；超级周期至2027H2；超大芯数光缆订单排至2028年' },
+  { id: 'nand', name: 'NAND超级周期', sub: 'NAND +151% YoY·DRAM +183% YoY·三星Q2再提价30%·算力缺至2027', group: 'catalyst', score: 4, weight: 7, note: 'BofA TAM $1.3T（2030年$2T）；TSMC Q1 3nm利用率>100%，BofA目标$500（20x 2027E P/E）；三星Q2内存再提价30%；算力租赁缺至2027年（知识星球）；ASML明日财报催化' },
+  { id: 'ai_capex', name: 'AI资本开支', sub: '超大云商capex $600-690亿(+36%)·豆包16.4万亿Token/日·OFC确认"光学超级周期"', group: 'catalyst', score: 4, weight: 8, note: '2026年超大型云商资本开支$600-690亿（+36% YoY）；豆包日Token消耗16.4万亿；DeepSeek V4即将发布；TSMC周四财报；OFC 2026确认"光学超级周期"；光互联市场$21.88B→2031年$40.03B' },
+  { id: 'rare_earth', name: '稀土/出口管制', sub: 'H200获批25%关税出口中国·阿里/字节大批量下单·综合中性', group: 'catalyst', score: 0, weight: 5, note: 'H200获批出口中国（25%关税）；阿里/字节大批量下单；DeepSeek V4转昇腾；中国5月停硫酸出口；综合净评分中性' }
 ];
 
 let scenarios = [
@@ -732,6 +1110,39 @@ let scenarios = [
 ];
 
 let signals = [
+  // 4/14 今日信号
+  { time: '04/14', type: 'bull', text: '🟢 霍尔木兹封锁远弱于预期：3艘船成功通过海峡，封锁仅针对伊朗港口而非全面关闭——最坏情景未兑现，WTI从$104回落至$97(-6.6%)，VIX从22暴跌至18.24(-17%)，SPX反弹+1.5%至6,890' },
+  { time: '04/14', type: 'bull', text: '⚡ Ackman启动Pershing Square $10bn双IPO路演(4/28定价)+$64bn收购UMG——金融大鳄极端看多/扩张行为，转型"伯克希尔模式"，历史上是市场转折重要信号' },
+  { time: '04/14', type: 'bull', text: '✅ 银行财报日(JPM/C/WFC/BLK)开启回购恢复潮；CTA+4σ买盘确认执行(SPX突破触发位6,864)；DXY暴跌至97.86(-2.1%)——三重技术顺风' },
+  { time: '04/14', type: 'info', text: '📊 美伊仍在沟通，讨论第二轮面对面会谈；黎以代表今日国务院首次会面；伊朗称封锁"构成海盗行为"但未军事反制——外交窗口重新打开，决策评分46→56(+10)' },
+  { time: '04/14', type: 'warn', text: '⚠️ 油价仍在$97高位(>$90)；密歇根48.7未改善；杠杆率310%(99百分位)不变；封锁持续时间仍是核心变量——改善但非解除，维持中性偏多而非升级' },
+  // 4/13 信号
+  { time: '04/13', type: 'bear', text: '🚨 美伊谈判彻底破裂+霍尔木兹封锁10am ET生效：WTI $104.35(+7%)，欧洲天然气+9.34%，VIX→22，亚太股市全线低开，美股期货-1%——地缘政治最坏情景之一落地，决策评分57→46（-11分）' },
+  { time: '04/13', type: 'bull', text: '⚡ GS CTA +4标准差强买入信号($83.5bn/周)·宏观对冲基金买入速度2025年5月以来最快·回购4/28恢复$150-200亿/周——技术面双重顺风维持，封锁是否改变趋势信号需观察' },
+  { time: '04/13', type: 'bull', text: '✅ Q1财报季正式开启（GS率先）：JPM预期EPS+12.6% YoY；BofA上调TSMC目标至$500（3nm利用率>100%）；ASML"客户意向将非常强劲"（JPM）——财报催化剂在封锁冲击下尤为关键' },
+  { time: '04/13', type: 'bull', text: '🔥 JPM Matejka：逢弱买入，V型反弹，历史82%正回报；GS Privorotsky：封锁时机（美股开盘同步）暗示"施压工具"而非彻底决裂；GS L/S 73.3%（历史第15百分位=极度悲观=逆向信号）' },
+  { time: '04/13', type: 'warn', text: '⚠️ BofA Subramanian明确宣称"经典滞胀环境"（最低目标7100）；Nomura：反弹本质是空头回补非新多头，基础不稳；VIX 22重破20关口；超级油轮能否通过霍尔木兹是今日最重要实时观察指标' },
+  { time: '04/13', type: 'info', text: '📊 光纤超级周期更新（4/13）：G.657.A2 340元/芯km(+871%)无人机+AI双驱动创历史新高；GLW SMF-28e+ $12.8/km(+184%)；1.6T收发器2026年出货20M单位——超级周期与停火无关，核心仓逻辑不变' },
+  // 4/11 今日信号
+  { time: '04/11', type: 'info', text: '🕌 伊斯兰堡谈判今日正式进行：伊朗外长Araqchi和议长Ghalibaf赴会，外交消息人士表达"非常乐观"；Trump向Netanyahu施压周二宣布黎巴嫩停火——停火路径加速清晰化，但双方仍存"明显分歧"' },
+  { time: '04/11', type: 'bull', text: '⚡ WTI $89.58，本周美国原油创2020年以来最大单周跌幅；Brent $95.20；油价下行=实际降息效果，通胀预期改善，为Fed年内降息打开窗口' },
+  { time: '04/11', type: 'bull', text: '✅ 核心CPI 3月+0.2% MoM、+2.6% YoY（低于预期），能源主导整体通胀；DXY本周从100.18跌至96.65（避险解除）；VIX 19.23维持<20技术面持续改善' },
+  { time: '04/11', type: 'warn', text: '⚠️ 密歇根消费者信心4月初值48.7（vs预期52.0），大幅逊于预期；通胀预期飙升；ISM服务PMI 54.0（低于前值56.1）——消费端衰退信号明显，与市场乐观形成背离' },
+  { time: '04/11', type: 'warn', text: '🔴 白宫：霍尔木兹短期无望重开；Trump申请980亿美元伊朗战争补充拨款；82空降师1500-2000士兵待命部署——军事压力维持高位' },
+  { time: '04/11', type: 'bear', text: 'Michael Burry增持NVDA看跌期权；Citi下调6只软件股（Veeva/DocuSign/NICE等）；Piper Sandler下调NKE；UBS下调NOW——大资金出现空头信号，分析师下调增多' },
+  // 4/10 分析师观点更新（analyst-tracker 自动化追踪）
+  { time: '04/10', type: 'bull', text: '🔴【分析师信号】Mark Newton(Fundstrat·钉住)：从谨慎做多→明确升级看多。"Markets Are Rallying, Here\'s Why It\'s Just the Beginning"——4月被技术面确认为恐慌顶点(peak fear)，多资产图表全面向上，年度目标S&P 7300不变但路径更顺畅。Stance: cautious_bull → bullish ↑' },
+  { time: '04/10', type: 'warn', text: '🔴【分析师信号】Hartnett(BofA·钉住)：Bull & Bear Indicator 8.7→7.4，大幅下跌创7月以来最大，正式终结持续逾3个月的卖出信号（自2025年12月9.6触发）。但明确表示："现在叫底部还太早"，无"买入逢跌"信号，等待更极端悲观情绪信号。多空意义：信号从SELL中性化，但未翻BULL' },
+  { time: '04/10', type: 'bull', text: '✅ John Flood(GS) 轧空预警验证：4/9 GS prime数据显示空头头寸2022年9月来最高，Flood警告"若正面消息出现将触发剧烈轧空"——已验证，轧空行情精准爆发，accuracy +1' },
+  // 4/10 今日信号
+  { time: '04/10', type: 'bull', text: '✅ CPI完美命中预期：整体+3.8%，核心+2.8%，双符合——市场宽慰显著，VIX从21→19.33，SPX 6,824接近CTA触发位6,864' },
+  { time: '04/10', type: 'bull', text: '🔥 Oppenheimer(GS)翻多"50年最佳科技买入机会"；Rubner(Citadel)翻多"仓位洗空·持久反弹窗口"——多头阵营分析师占60%，多空共识加速形成' },
+  { time: '04/10', type: 'bull', text: '⚡ VIX 19.33跌破20大关（-8% vs昨日）；SPX 6,824逼近CTA触发位6,864；一旦穿越将触发CTA大规模被动买入' },
+  { time: '04/10', type: 'warn', text: '密歇根消费者信心-6%（2025年12月来新低），一年通胀预期从3.4%升至3.8%；中高收入消费者信心急跌——经济下行警示' },
+  { time: '04/10', type: 'info', text: '🕌 伊斯兰堡谈判启动：VP Vance+Kushner+Witkoff已抵达，伊朗Ghalibaf赴谈；巴基斯坦设定务实目标"维持谈判继续"——成败将于本周末揭晓，成功可推评分至72+' },
+  { time: '04/10', type: 'bull', text: '光纤今日最新价：G.652.D突破100元/芯km(+186% YTD)，G.657.A2升至300元(+757%)——Meta/康宁$60亿长约确认，缺口持续至2027年底' },
+  // 4/9 日中更新
+  { time: '04/09', type: 'bull', text: '🔥 LITE(Lumentum)预计两个季度内售罄2028年全部产能（彭博）—— AI光模块/数据中心互联需求已预订至2028年，算力基建超级周期信号极强，利好LITE/AAOI/COHR/II-VI' },
   // 4/9 今日最新
   { time: '04/09', type: 'warn', text: '停火裂痕：伊朗议会指控美方违约3条款（以续打黎巴嫩/无人机/铀浓缩），霍尔木兹仅4艘油轮' },
   { time: '04/09', type: 'warn', text: 'WTI反弹至$99-101(+3-7%)，GS Pasquariello：大宗商品将围绕更高平台波动' },
@@ -812,6 +1223,93 @@ function renderAll() {
   renderHistory();
   updatePhase();
   updateTimestamp();
+  renderSectorRotation();
+}
+
+function renderSectorRotation() {
+  const container = document.getElementById('sectorRotationGrid');
+  if (!container) return;
+  const summaryEl = document.getElementById('sectorSummary');
+
+  // Filter
+  let display = sectorRotation;
+  if (sectorFilter === 'strong') display = sectorRotation.filter(s => ['accumulation','momentum'].includes(s.phase) && s.money.inst > 45);
+  else if (sectorFilter === 'caution') display = sectorRotation.filter(s => ['hot','distribution'].includes(s.phase));
+  else if (sectorFilter === 'avoid') display = sectorRotation.filter(s => s.phase === 'outflow' || (s.phase === 'distribution' && s.money.retail > 50));
+
+  // Summary bar
+  const strongOnes = sectorRotation.filter(s => (s.phase==='accumulation'||s.phase==='momentum') && s.money.inst>=50);
+  const avoidOnes = sectorRotation.filter(s => s.phase==='outflow'||s.phase==='distribution');
+  summaryEl.innerHTML = `
+    <span style="font-size:12px;color:var(--text-dim);font-weight:600;">快速导航：</span>
+    <span style="color:var(--green);font-weight:700;">💎 机构主导板块：</span>
+    ${strongOnes.map(s=>`<span style="color:var(--text);background:rgba(52,211,153,0.1);padding:2px 8px;border-radius:4px;font-size:12px;">${s.icon}${s.name}</span>`).join(' ')}
+    <span style="color:var(--red);font-weight:700;margin-left:12px;">⛔ 规避：</span>
+    ${avoidOnes.map(s=>`<span style="color:var(--text-dim);background:rgba(248,113,113,0.1);padding:2px 8px;border-radius:4px;font-size:12px;">${s.icon}${s.name}</span>`).join(' ')}
+  `;
+
+  // Cards
+  container.innerHTML = display.map(s => {
+    const sig = getSignalFromSector(s);
+    const ph = PHASE_CONFIG[s.phase];
+    const flowBar = (val) => {
+      const pct = Math.min(Math.abs(val)/5*50, 50);
+      const cls = val >= 0 ? 'positive' : 'negative';
+      const color = val >= 0 ? '#34d399' : '#f87171';
+      return `<div class="flow-track">
+        <div class="flow-center-line"></div>
+        <div class="flow-bar-fill ${cls}" style="width:${pct}%;background:${color};"></div>
+      </div><span class="flow-val" style="color:${color};">${val>0?'+'+val:val}</span>`;
+    };
+    const instW = s.money.inst; const ctaW = s.money.cta; const retW = s.money.retail;
+    return `<div class="sector-card" onclick="this.classList.toggle('active')">
+      <div class="sector-card-header">
+        <div>
+          <div class="sector-card-name">${s.icon} ${s.name}</div>
+          <div class="sector-card-tickers">${s.tickers}</div>
+        </div>
+        <span class="sector-updated">${s.updated}</span>
+      </div>
+      <div class="flow-section">
+        <div class="flow-section-title">资金净流入强度（-5 弱 ← 0 → +5 强）</div>
+        <div class="flow-row"><span class="flow-label">1周</span>${flowBar(s.flows.w1)}</div>
+        <div class="flow-row"><span class="flow-label">4周</span>${flowBar(s.flows.w4)}</div>
+        <div class="flow-row"><span class="flow-label">12周</span>${flowBar(s.flows.w12)}</div>
+      </div>
+      <div class="money-section">
+        <div class="flow-section-title">资金属性分布</div>
+        <div class="money-bar-track">
+          <div class="money-seg" style="width:${instW}%;background:#5b8def;" title="机构${instW}%">${instW>15?instW+'%':''}</div>
+          <div class="money-seg" style="width:${ctaW}%;background:#a78bfa;" title="CTA${ctaW}%">${ctaW>15?ctaW+'%':''}</div>
+          <div class="money-seg" style="width:${retW}%;background:#fb923c;" title="散户${retW}%">${retW>15?retW+'%':''}</div>
+        </div>
+        <div class="money-legend">
+          <div class="money-legend-item"><div class="money-dot" style="background:#5b8def;"></div>机构 ${instW}%</div>
+          <div class="money-legend-item"><div class="money-dot" style="background:#a78bfa;"></div>CTA ${ctaW}%</div>
+          <div class="money-legend-item"><div class="money-dot" style="background:#fb923c;"></div>散户 ${retW}%</div>
+        </div>
+      </div>
+      <div class="phase-row">
+        <span class="phase-badge ${ph.cls}">${ph.label}</span>
+        <span class="signal-badge ${sig.cls}">${sig.label}</span>
+      </div>
+      <div class="sector-prediction" style="margin-bottom:6px;font-size:11px;color:var(--accent);">→ ${sig.predict}</div>
+      ${s.picks && s.picks.length ? `<div style="margin-bottom:6px;padding:6px 8px;background:rgba(91,141,239,0.06);border-radius:6px;border-left:2px solid var(--accent);">
+        <div style="font-size:10px;color:var(--accent);font-weight:600;margin-bottom:4px;">🎯 机构重点推荐</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;">${s.picks.map(p =>
+          `<span style="display:inline-block;font-size:10px;padding:2px 6px;border-radius:4px;background:${p.hot?'rgba(52,211,153,0.15)':'rgba(255,255,255,0.06)'};color:${p.hot?'#34d399':'var(--text-dim)'};border:1px solid ${p.hot?'rgba(52,211,153,0.25)':'rgba(255,255,255,0.08)'};" title="${p.src}"><b>${p.tk}</b> <span style="opacity:0.7">${p.src}</span></span>`
+        ).join('')}</div>
+      </div>` : ''}
+      <div class="sector-note">${s.note}</div>
+    </div>`;
+  }).join('');
+}
+
+function setSectorFilter(f) {
+  sectorFilter = f;
+  document.querySelectorAll('.sector-filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sf_'+f).classList.add('active');
+  renderSectorRotation();
 }
 
 function renderFactors() {
@@ -1683,7 +2181,11 @@ const historicalData = [
   { date: '2026-04-06', score: 52, spx: 6700, event: 'Wilson见底判断 · CTA $1480B就绪 · 21份研报偏多' },
   { date: '2026-04-07', score: 58, spx: 6783, event: '阿克曼$640亿收UMG · ETF空头COVID以来最高 · GS科技PEG 0.7-0.9x' },
   { date: '2026-04-08', score: 65, spx: 6950, event: '★ 停火达成 · SPX+2.5% · VIX→20 · 油跌16% · 降息概率14→43%' },
-  { date: '2026-04-09', score: 58, spx: 6785, event: '停火裂痕·霍尔木兹仅4艘油轮·WTI反弹$99·周六美伊伊斯兰堡直接谈判·CTA买入$340亿/周待触发·新增沃士换届因素' }
+  { date: '2026-04-09', score: 58, spx: 6785, event: '停火裂痕·霍尔木兹仅4艘油轮·WTI反弹$99·周六美伊伊斯兰堡直接谈判·CTA买入$340亿/周待触发·新增沃士换届因素' },
+  { date: '2026-04-10', score: 60, spx: 6824, event: 'CPI 3.8%/2.8%双符合·VIX→19.33·SPX逼近CTA触发6864·Oppenheimer+Rubner双翻多·伊斯兰堡谈判启动' },
+  { date: '2026-04-11', score: 57, spx: 6817, event: '伊斯兰堡谈判进行·外交"非常乐观"·WTI$89.58最大单周跌·密歇根48.7大幅逊预期·Citi下调6软件股·核心CPI2.6%低于预期' },
+  { date: '2026-04-13', score: 46, spx: 6781, event: '★ 美伊谈判破裂·霍尔木兹封锁生效·WTI$104(+7%)·VIX→22·评分57→46·财报季开幕GS·CTA+4σ·TSMC目标$500' },
+  { date: '2026-04-14', score: 56, spx: 6890, event: '封锁弱于预期·3船通过霍尔木兹·VIX22→18·WTI$97·Ackman$10bn双IPO+$64bnUMG·评分46→56·银行财报日' }
 ];
 
 

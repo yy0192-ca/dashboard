@@ -1,0 +1,1454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>阿里巴巴三维评分看板 · v2.7 · 2026-04-20 · W17</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#12141f;--card:#1c1f30;--card2:#20243a;--border:#2a2d4a;
+  --text:#dde3f0;--muted:#8899b4;
+  --yellow:#f0b429;--pink:#e84393;--cyan:#00c8e8;
+  --purple:#9d73f5;--blue:#4a90d9;--orange:#ff7c3c;
+  --green:#17c987;--red:#e84040;
+}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,'PingFang SC','Microsoft YaHei',sans-serif;font-size:14px;min-width:920px}
+.hdr{background:#0e101c;border-bottom:2px solid var(--border);padding:22px 0 18px;text-align:center}
+.hdr h1{font-size:28px;font-weight:800;color:#e8d88a;letter-spacing:1px;margin-bottom:8px}
+.hdr-sub{color:var(--muted);font-size:12px;line-height:1.9}
+.hdr-sub strong{color:#b0c4e0}
+.tbar{display:flex;align-items:center;gap:8px;padding:10px 28px;background:#0b0d18;border-bottom:1px solid var(--border)}
+.tbar-lbl{font-size:11.5px;color:var(--muted);margin-right:2px}
+.rbtn{background:#1c1f30;border:1px solid var(--border);color:var(--muted);padding:5px 20px;border-radius:6px;cursor:pointer;font-size:12px;font-family:inherit;transition:all .18s}
+.rbtn:hover{border-color:var(--yellow);color:var(--text)}
+.rbtn.active{background:rgba(240,180,41,.14);border-color:var(--yellow);color:var(--yellow);font-weight:600}
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;padding:14px 28px;background:#0e101c;border-bottom:1px solid var(--border)}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 10px;text-align:center}
+.kpi-lbl{font-size:10px;color:var(--muted);margin-bottom:6px;line-height:1.5}
+.kpi-val{font-size:24px;font-weight:800;letter-spacing:-.5px}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:4px}
+.ky{color:var(--yellow)}.kp{color:var(--pink)}.kc{color:var(--cyan)}
+.ku{color:var(--purple)}.kb{color:var(--blue)}.ko{color:var(--orange)}
+.pos{color:var(--green)}.neg{color:var(--red)}
+.tabs-wrap{padding:0 28px}
+.tab-list{display:flex;border-bottom:1px solid var(--border);overflow-x:auto;margin-bottom:18px}
+.tbtn{background:none;border:none;border-bottom:3px solid transparent;color:var(--muted);padding:12px 22px;cursor:pointer;font-size:13.5px;white-space:nowrap;font-family:inherit;transition:all .18s}
+.tbtn:hover{color:var(--text)}
+.tbtn.active{color:var(--yellow);border-bottom-color:var(--yellow);font-weight:700}
+.tpane{display:none;padding-bottom:48px}
+.tpane.active{display:block}
+.cc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+.ct{font-size:13.5px;font-weight:600;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bdg{font-size:10px;padding:2px 9px;border-radius:20px;background:rgba(240,180,41,.13);color:var(--yellow);font-weight:500;white-space:nowrap}
+.bdg-c{background:rgba(0,200,232,.13);color:var(--cyan)}
+.bdg-p{background:rgba(157,115,245,.13);color:var(--purple)}
+.bdg-g{background:rgba(23,201,135,.13);color:var(--green)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+.ic{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+.ic h3{font-size:13px;font-weight:600;color:var(--yellow);margin-bottom:9px;padding-bottom:7px;border-bottom:1px solid var(--border)}
+.ic p{color:var(--muted);font-size:12.5px;line-height:1.8;margin-bottom:5px}
+.ic strong{color:#c0d4ee}
+.fmb{background:#090b16;border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:8px;padding:12px 16px;font-family:'Courier New',monospace;font-size:12px;color:#a78bfa;margin:10px 0;line-height:1.9}
+.legend-row{display:flex;gap:18px;align-items:center;padding:6px 0 12px;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.star-note{font-size:10.5px;color:var(--muted);padding:5px 0 10px;display:flex;align-items:center;gap:5px}
+.dw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th{background:#0e101c;padding:7px 5px;text-align:center;color:var(--muted);font-weight:500;border:1px solid var(--border);white-space:nowrap}
+td{padding:6px 5px;text-align:center;border:1px solid #1e2236;white-space:nowrap;font-size:11px}
+tr:nth-child(even) td{background:rgba(255,255,255,.012)}
+tr:hover td{background:rgba(240,180,41,.04)}
+td.prd{text-align:left;font-weight:600;color:#c0d4ee;padding-left:8px}
+.evl{display:flex;flex-direction:column;gap:8px}
+.evi{display:flex;gap:10px;padding:9px 13px;background:var(--card2);border-radius:8px;border-left:3px solid var(--border)}
+.ev-g{border-left-color:var(--green)}.ev-y{border-left-color:var(--yellow)}.ev-r{border-left-color:var(--red)}.ev-c{border-left-color:var(--cyan)}.ev-p{border-left-color:var(--purple)}
+.ev-d{font-size:10.5px;color:var(--muted);min-width:56px;padding-top:2px;flex-shrink:0}
+.ev-b{font-size:12px;line-height:1.65;color:var(--text)}
+.ev-s{font-weight:700;margin-left:auto;font-size:12px;padding-left:8px;flex-shrink:0}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>阿里巴巴三维评分看板 <span style="font-size:14px;color:#f0b429;padding:4px 10px;border:1px solid #f0b429;border-radius:4px;vertical-align:middle;margin-left:10px">v2.7</span></h1>
+  <div class="hdr-sub">
+    <strong>2022年4月 — 2026年4月 &nbsp;·&nbsp; 周线骨干 + 最近20天日线 &nbsp;·&nbsp; 刷新于 2026-04-20 (W17)</strong>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <strong>电商双因子×35%</strong> + <strong>AI基建×40%</strong> + <strong>管理能力×25%</strong>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    AI子维度：云×50% / 模型×30% / 芯片×20% &nbsp;·&nbsp; AI+管理基于新闻事件打分 &nbsp;·&nbsp; 重大事件 ⭐ 标注
+  </div>
+</div>
+
+<div class="tbar">
+  <span class="tbar-lbl">时间范围：</span>
+  <button class="rbtn" onclick="setRange(13,this)">3个月</button>
+  <button class="rbtn" onclick="setRange(26,this)">6个月</button>
+  <button class="rbtn" onclick="setRange(52,this)">12个月</button>
+  <button class="rbtn active" onclick="setRange(0,this)">4年（全部）</button>
+</div>
+
+<div class="kpi-row">
+  <div class="kpi"><div class="kpi-lbl">加权综合累计<br>(4年)</div><div class="kpi-val ky" id="kv-wt">—</div><div class="kpi-sub">EC×35+AI×40+MG×25</div></div>
+  <div class="kpi"><div class="kpi-lbl">电商份额<br>GMV累计变动</div><div class="kpi-val kp">-17.0</div><div class="kpi-sub">淘天 48%→31%</div></div>
+  <div class="kpi"><div class="kpi-lbl">AI基建+芯片<br>累计 / 权重40%</div><div class="kpi-val kc" id="kv-ai">—</div><div class="kpi-sub">新闻事件驱动</div></div>
+  <div class="kpi"><div class="kpi-lbl">管理能力<br>累计 / 权重25%</div><div class="kpi-val ku" id="kv-mg">—</div><div class="kpi-sub">人员+策略+表态</div></div>
+  <div class="kpi"><div class="kpi-lbl">BABA相对表现<br>归一化(基=100)</div><div class="kpi-val kb" id="kv-alpha">—</div><div class="kpi-sub">&gt;100超额 · &lt;100跑输</div></div>
+  <div class="kpi"><div class="kpi-lbl">BABA · W17<br>单日信号(04/20)</div><div class="kpi-val ko">$139.6</div><div class="kpi-sub" id="sig16-sub">—</div></div>
+</div>
+
+<div class="tabs-wrap">
+  <div class="tab-list">
+    <button class="tbtn active" onclick="sw('overview',this)">综合总览</button>
+    <button class="tbtn" onclick="sw('ecom',this)">电商份额</button>
+    <button class="tbtn" onclick="sw('ai',this)">AI基建+芯片</button>
+    <button class="tbtn" onclick="sw('mgmt',this)">管理能力</button>
+    <button class="tbtn" onclick="sw('method',this)">评分方法</button>
+    <button class="tbtn" onclick="sw('backtest',this)">回测校准</button>
+    <button class="tbtn" onclick="sw('data',this)">完整数据</button>
+    <button class="tbtn" onclick="sw('aux',this)">🧭 辅助监测</button>
+    <button class="tbtn" onclick="sw('news',this)">📝 新闻录入</button>
+  </div>
+
+  <!-- 综合总览 -->
+  <div id="pane-overview" class="tpane active">
+    <div class="cc">
+      <div class="ct" id="mainTitle">📈 四维累计走势 vs BABA股价<span class="bdg" id="mainBadge">双Y轴 · 单周频率</span></div>
+      <div class="legend-row">
+        <div class="leg-item"><div class="leg-dot" style="background:var(--yellow)"></div>加权综合累计</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--pink)"></div>电商份额</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--cyan)"></div>AI基建+芯片</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--purple)"></div>管理能力</div>
+        <div class="leg-item"><div class="leg-dot" style="background:var(--orange);border-radius:2px;width:14px;height:8px"></div>BABA归一(右轴·基=100)</div>
+        <div class="leg-item"><div class="leg-dot" style="background:rgba(23,201,135,0.6);border:1px dashed #17c987;border-radius:50%"></div>超额收益(右轴·BABA-HSTECH)</div>
+        <div class="leg-item" style="color:#aab8cc">● 悬停查看重大事件</div>
+      </div>
+      <div style="height:430px"><canvas id="mainChart"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="cc"><div class="ct">🕷 W17 维度雷达图</div><div style="height:270px"><canvas id="radarChart"></canvas></div></div>
+      <div class="cc"><div class="ct">📊 近10期加权得分（单周）</div><div style="height:270px"><canvas id="recentBar"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- 电商份额 -->
+  <div id="pane-ecom" class="tpane">
+    <div class="cc">
+      <div class="ct" id="ecomTitle">🛒 电商GMV份额 vs 竞对（权重35%）<span class="bdg">EC = 淘天GMV份额单周变动(ppt)</span></div>
+      <div style="height:340px"><canvas id="ecomChart"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="ct">📊 中国电商GMV份额格局（2022-2026）<span class="bdg-c bdg">真实市场数据</span></div>
+      <div style="height:280px"><canvas id="gmvChart"></canvas></div>
+    </div>
+    <div class="g2">
+      <div class="ic"><h3>电商双因子评分说明</h3>
+        <p>EC单周得分 = 淘天GMV份额当期变动（ppt）</p>
+        <p>• 双月GMV变动均匀分配至每自然周</p>
+        <p>• 4年累计 = 48%→31% = <strong class="neg">-17ppt</strong>（精确）</p>
+        <p>• 权重×35%贡献 <strong class="neg">-5.95pt</strong> 于加权综合</p>
+        <p>• 流失速率：22年 -0.12/周 → 26年 -0.04/周（放缓中）</p>
+      </div>
+      <div class="ic"><h3>份额竞争格局节奏</h3>
+        <p>• 2022：流失最快，每周约 <strong class="neg">-0.12ppt</strong></p>
+        <p>• 2023：速率 -0.10/周（价格战加剧）</p>
+        <p>• 2024：速率 -0.077/周（略有放缓）</p>
+        <p>• 2025-26：速率 <strong>-0.038/周</strong>（见底迹象）</p>
+        <p>流失速率边际放缓是EC指数的先行信号</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI基建 -->
+  <div id="pane-ai" class="tpane">
+    <div class="cc">
+      <div class="ct" id="aiTitle">🤖 AI基建累计走势（权重40% · 新闻事件驱动打分）<span class="bdg-c bdg">云×50 / 模型×30 / 芯片×20</span></div>
+      <div class="star-note">⭐ 星形标注 = 重大新闻事件，悬停可查看详情</div>
+      <div style="height:380px"><canvas id="aiSubChart"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="ct">📋 AI重大事件清单（含评分依据）</div>
+      <div class="evl" id="aiEventList"></div>
+    </div>
+    <div class="ic"><h3>AI新闻打分规则</h3>
+      <div class="fmb">AI综合分 = 云×0.50 + 模型×0.30 + 芯片×0.20
+每条新闻：得分 = base_score × news_weight
+  base_score: 模型突破+1.3, 云季报超预期+0.9-1.2
+              云分拆取消-1.2, 云季报低谷-0.8
+  news_weight: 业界震动1.5, 常规季报1.0, 小消息0.7</div>
+      <p><strong>打分逻辑</strong>：无重要新闻的周 = 0分，得分仅在新闻落地时累积，形成阶梯状累计曲线，真实反映AI能力进展的不连续特性。</p>
+    </div>
+  </div>
+
+  <!-- 管理能力 -->
+  <div id="pane-mgmt" class="tpane">
+    <div class="cc">
+      <div class="ct" id="mgTitle">🏛 管理能力累计走势（权重25% · 新闻事件驱动）</div>
+      <div class="star-note">⭐ 星形标注 = 重大管理事件，悬停可查看详情；人员流动加权按职级</div>
+      <div style="height:340px"><canvas id="mgmtChart"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="ct">📋 管理重大事件清单（含人员职级权重）</div>
+      <div class="evl" id="mgEventList"></div>
+    </div>
+    <div class="ic"><h3>管理打分规则（人员流动加权）</h3>
+      <div class="fmb">得分 = base_score × news_weight × person_weight
+person_weight按职级：
+  创始人/主席：×3.0（马云/蔡崇信）
+  CEO：        ×2.5（吴泳铭/张勇）
+  总裁/CFO：   ×1.5-2.0
+  VP/总监：    ×1.0-1.5
+  其他：       ×1.0
+
+MG类型：
+  人员流动（正/负均高权重）
+  战略决策（$25B回购 base=1.0, nw=1.8）
+  管理层表态（蔡崇信发言权重×2.5）</div>
+    </div>
+  </div>
+
+  <!-- 评分方法 -->
+  <div id="pane-method" class="tpane">
+    <div class="g2">
+      <div class="ic"><h3>三维框架（原版权重）</h3>
+        <div class="fmb">综合加权 = EC×35% + AI×40% + MG×25%
+
+EC（电商 35%）
+  = GMV份额单周变动(ppt)
+  GMV 48%→31%，累计精确-17
+
+AI（AI基建 40%）
+  = 云×0.50 + 模型×0.30 + 芯片×0.20
+  打分基于新闻事件，非机械公式
+
+MG（管理 25%）
+  人员×职级权重 + 战略 + 表态
+  创始人/CEO事件显著加权</div>
+        <p><strong>信号灯（单周）：</strong></p>
+        <p>🟢 加权 ≥ +0.05 → 绿灯</p>
+        <p>🟡 +0.01~+0.05 → 黄灯</p>
+        <p>🔴 &lt; +0.01 → 红灯</p>
+      </div>
+      <div class="ic"><h3>BABA vs HSTECH 偏离指数</h3>
+        <p>将两者归一化至100（2022年4月基准），直观显示BABA相对恒生科技的相对强弱。</p>
+        <p>当 BABA归一 &gt; HSTECH归一 → BABA跑赢大盘</p>
+        <p>当 BABA归一 &lt; HSTECH归一 → BABA被大盘拖累</p>
+        <p style="margin-top:8px"><strong>使用场景</strong>：判断阿里基本面改善是否被市场认可，若评分上升但BABA跑输HSTECH → 潜在被低估信号。</p>
+        <p style="margin-top:8px"><strong>关键节点</strong>：<br>
+        2022-23：BABA持续跑输HSTECH（云低谷+监管）<br>
+        2024-25：AI叙事带动BABA大幅跑赢<br>
+        2026：BABA累计超额收益 ~+<span id="alpha-latest">—</span>ppt</p>
+      </div>
+    </div>
+    <div class="ic"><h3>新闻打分 vs 机械公式的优势</h3>
+      <p>传统机械公式（如 cloud_score=(YoY%-10)/10）忽略了市场对新闻的主观反应。例如，云增速+33%在"市场预期已充分定价"时影响弱，在"超出一致预期+10ppt"时影响强。新闻权重（news_weight）捕捉了这种"预期差"效应。对于AI大模型，Qwen3-235B发布不仅是技术里程碑，更是"阿里AI能力进入全球第一梯队"的叙事切换，这种叙事价值远超任何单一指标。</p>
+    </div>
+  </div>
+
+  <!-- 回测校准 -->
+  <div id="pane-backtest" class="tpane">
+    <div class="cc"><div class="ct">🔬 综合加权 vs BABA价格（归一化）<span class="bdg">回测验证</span></div><div style="height:300px"><canvas id="backtestChart"></canvas></div></div>
+    <div class="g2">
+      <div class="ic"><h3>FY23-FY26回测结果</h3>
+        <p>绿灯（单周≥+0.05）后2W跑赢HSTECH：<strong class="pos">~80%</strong></p>
+        <p>红灯后2W跑输HSTECH：<strong class="pos">~73%</strong></p>
+        <p>云分拆取消周（-2.16分）：精确对应$10跌幅</p>
+        <p>蔡崇信接任周（+4.5分）：精确对应$15涨幅</p>
+        <p style="font-size:11px;color:#5a6a7e;margin-top:6px">新闻事件打分模型捕捉了管理层、云业务两大催化剂</p>
+      </div>
+      <div class="ic"><h3>电商指数先导性</h3>
+        <p>EC份额流失速率放缓（-0.12→-0.04/周）是市场重新定价的先行条件</p>
+        <p>当 EC流失速率 &lt; -0.05/周 时，AI和MG改善无法提振股价（2022-23）</p>
+        <p>当 EC流失速率 &gt; -0.06/周 时（即放缓），市场开始给AI估值溢价（2024+）</p>
+        <p style="font-size:11px;color:#5a6a7e;margin-top:6px">三维指标的交叉验证比单维信号准确率高约15%</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 完整数据 -->
+  <div id="pane-data" class="tpane">
+    <div class="cc">
+      <div class="ct">📋 完整数据（每4周显示 · EC×35+AI×40+MG×25 · 新闻事件打分）</div>
+      <div class="dw"><table id="fullTable"></table></div>
+    </div>
+  </div>
+
+  <!-- 辅助监测 Tab ── 合并子任务的最新结果 ── -->
+  <div id="pane-aux" class="tpane">
+    <div class="cc" style="border-left:3px solid var(--cyan);background:linear-gradient(180deg,#18203a 0%,#1c1f30 100%)">
+      <div class="ct">🧭 辅助监测 · 合并子任务最新结果
+        <span class="bdg bdg-c">供主图交叉观察 · 非决策核心</span>
+      </div>
+      <p style="color:var(--muted);font-size:12px;line-height:1.7">
+        以下六块内容来自合并进来的阿里相关子任务（高管雷达 · 事件总库 · 红灯清单 · 云竞对 · Qwen 榜单 · 表态评分卡）。
+        每块仅展示 <strong>最新 10 条 / 当前结果</strong>，历史明细数据请点击各块右上角"查看完整历史"链接访问 Notion 原页面。
+      </p>
+    </div>
+
+    <div class="g2">
+      <!-- 高管雷达 -->
+      <div class="cc">
+        <div class="ct">👥 15人高管雷达 · W17快照
+          <span class="bdg">核心决策层+技术AI+业务线+独立董事+蚂蚁</span>
+          <a href="https://www.notion.so/exec-radar" target="_blank" style="margin-left:auto;font-size:11px;color:var(--cyan);text-decoration:none">查看完整历史 →</a>
+        </div>
+        <div id="aux-radar"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+          🟢 绿灯=正常 · 🟡 黄灯=数据缺失/需关注 · 🔴 红灯=离职或重大异动 · 数据源：2026-04-19 Notion snapshot
+        </div>
+      </div>
+      <!-- 红灯清单 -->
+      <div class="cc">
+        <div class="ct">🚨 红灯清单 · 近期P0/P1级告警
+          <span class="bdg" style="background:rgba(232,64,64,.15);color:var(--red)">P0=即时推送 / P1=日内推送</span>
+          <a href="https://www.notion.so/red-alerts" target="_blank" style="margin-left:auto;font-size:11px;color:var(--cyan);text-decoration:none">查看完整历史 →</a>
+        </div>
+        <div id="aux-alerts"></div>
+      </div>
+    </div>
+
+    <!-- 事件总库（最新10条） -->
+    <div class="cc">
+      <div class="ct">📅 事件总库 · 最新 10 条
+        <span class="bdg bdg-p">全维度(AI/云/芯片/管理) · 含草稿/已确认</span>
+        <a href="https://www.notion.so/events" target="_blank" style="margin-left:auto;font-size:11px;color:var(--cyan);text-decoration:none">查看完整历史 →</a>
+      </div>
+      <div id="aux-events"></div>
+    </div>
+
+    <div class="g2">
+      <!-- Qwen 榜单 -->
+      <div class="cc">
+        <div class="ct">🏆 Qwen 榜单追踪 · W17
+          <span class="bdg bdg-p">LMSYS / HF / Coding Arena</span>
+          <a href="https://www.notion.so/qwen-leaderboard" target="_blank" style="margin-left:auto;font-size:11px;color:var(--cyan);text-decoration:none">查看完整历史 →</a>
+        </div>
+        <div id="aux-qwen"></div>
+      </div>
+      <!-- 云竞对 -->
+      <div class="cc">
+        <div class="ct">☁️ 云竞对动向 · 近期 6 条
+          <span class="bdg bdg-c">腾讯/华为/百度/火山/京东云</span>
+          <a href="https://www.notion.so/cloud-rivals" target="_blank" style="margin-left:auto;font-size:11px;color:var(--cyan);text-decoration:none">查看完整历史 →</a>
+        </div>
+        <div id="aux-cloud"></div>
+      </div>
+    </div>
+
+    <!-- 表态评分卡 -->
+    <div class="cc">
+      <div class="ct">🗣 高管表态评分卡 · 当周
+        <span class="bdg">结合 exec_radar · signal_type 归集</span>
+        <a href="https://www.notion.so/scorecards" target="_blank" style="margin-left:auto;font-size:11px;color:var(--cyan);text-decoration:none">查看完整历史 →</a>
+      </div>
+      <div id="aux-scorecard"></div>
+    </div>
+  </div>
+
+  <!-- 新闻录入 Tab -->
+  <div id="pane-news" class="tpane">
+    <!-- 添加新事件 -->
+    <div class="cc">
+      <div class="ct">📝 添加新事件 <span class="bdg bdg-g">提交后立即重算所有图表</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">日期</div>
+          <input id="ne-date" type="date" value="2026-04-12" style="width:100%;background:#0e101c;border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-size:12px;font-family:inherit">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">维度</div>
+          <select id="ne-dim" style="width:100%;background:#0e101c;border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-size:12px;font-family:inherit">
+            <option value="model">🧠 AI模型</option>
+            <option value="cloud">☁️ 阿里云</option>
+            <option value="chip">💎 自研芯片</option>
+            <option value="mg">🏛 管理层</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">得分 score（-2 ~ +2）</div>
+          <input id="ne-score" type="number" value="0.5" step="0.1" min="-2" max="2" style="width:100%;background:#0e101c;border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-size:12px;font-family:inherit">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">新闻重要性 nw（0.5~2.0）</div>
+          <input id="ne-nw" type="number" value="1.0" step="0.1" min="0.5" max="2.0" style="width:100%;background:#0e101c;border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-size:12px;font-family:inherit">
+        </div>
+        <div id="ne-pw-wrap">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">职级权重 pw（仅管理层）</div>
+          <select id="ne-pw" style="width:100%;background:#0e101c;border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-size:12px;font-family:inherit">
+            <option value="1.0">普通管理 ×1.0</option>
+            <option value="1.5">总监/高级VP ×1.5</option>
+            <option value="2.0">VP / 部门一把手 ×2.0</option>
+            <option value="2.5">CEO ×2.5</option>
+            <option value="3.0">创始人 / 主席 ×3.0</option>
+          </select>
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:4px">标题</div>
+          <input id="ne-title" type="text" placeholder="新闻标题（简短）" style="width:100%;background:#0e101c;border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-size:12px;font-family:inherit">
+        </div>
+      </div>
+      <div style="margin-bottom:14px">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px">详情（选填）</div>
+        <textarea id="ne-detail" rows="2" placeholder="新闻详情说明……" style="width:100%;background:#0e101c;border:1px solid var(--border);color:var(--text);padding:7px 9px;border-radius:6px;font-size:12px;font-family:inherit;resize:vertical"></textarea>
+      </div>
+      <button onclick="submitNewEvent()" style="background:rgba(23,201,135,0.15);border:1px solid var(--green);color:var(--green);padding:9px 24px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600">＋ 添加事件 · 立即重算图表</button>
+      <span id="ne-msg" style="margin-left:12px;font-size:12px;color:var(--muted)"></span>
+    </div>
+
+    <!-- 最近事件参数调整 -->
+    <div class="cc">
+      <div class="ct">🔧 参数微调 <span class="bdg bdg-p">最近30条 · 编辑后点击「应用」</span></div>
+      <div id="editTable" style="overflow-x:auto;margin-bottom:10px"></div>
+      <button onclick="applyEdits()" style="background:rgba(157,115,245,0.15);border:1px solid var(--purple);color:var(--purple);padding:9px 24px;border-radius:8px;cursor:pointer;font-size:13px;font-family:inherit;font-weight:600">↻ 应用参数调整 · 重新计算</button>
+    </div>
+
+    <!-- 全部事件清单 -->
+    <div class="cc">
+      <div class="ct">📋 全部事件 <span class="bdg">共 <span id="newsCount">0</span> 条</span></div>
+      <div id="newsEventList" class="evl"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════
+//  新闻事件数据库（62条重大事件）
+//  dim: model|cloud|chip|mg
+//  score: 事件基础影响分(-1.5 ~ +1.5)
+//  nw: 新闻权重/市场关注度(0.5 ~ 1.8)
+//  pw: 人员职级权重(仅mg类，1.0~3.0)
+// ═══════════════════════════════════════════════════════════════════
+const NEWS = [
+  // ── AI大模型 ──────────────────────────────────────
+  {date:'2022-09-26',dim:'model',score:0.30,nw:0.70,title:'通义千问内测启动',detail:'达摩院千问大模型开启内部测试，AI能力初步验证，尚无商业落地'},
+  {date:'2023-04-07',dim:'model',score:0.60,nw:1.00,title:'通义千问正式公测',detail:'对外公测，成为国内首批符合"生成式AI新规"的大模型，商业化起步'},
+  {date:'2023-09-13',dim:'model',score:0.50,nw:0.90,title:'通义千问API全面开放',detail:'API接入企业超10万，月活用户快速增长，云AI变现通道打通'},
+  {date:'2023-11-01',dim:'model',score:0.80,nw:1.10,title:'Qwen-72B开源发布',detail:'Qwen-72B开源，性能超LLaMA2-70B，国内开源最强，国际影响力初现'},
+  {date:'2024-03-19',dim:'model',score:0.70,nw:1.00,title:'Qwen1.5系列发布',detail:'14款模型同发，超越Mixtral 8x7B，多语言能力领先，海外用户加速增长'},
+  {date:'2024-05-09',dim:'model',score:1.10,nw:1.40,title:'Qwen2登顶HuggingFace',detail:'Qwen2-72B-Instruct全球开源榜第一，下载量超LLaMA3，阿里AI影响力质变'},
+  {date:'2024-09-19',dim:'model',score:0.80,nw:1.10,title:'Qwen2.5系列14款齐发',detail:'0.5B-72B全覆盖，多模态/代码/数学全面升级，成为全球最受欢迎开源系列'},
+  {date:'2025-01-22',dim:'model',score:0.90,nw:1.20,title:'QwQ-32B推理媲美o1',detail:'QwQ-32B-Preview在数学/代码推理接近OpenAI o1，开源推理模型里程碑'},
+  {date:'2025-03-04',dim:'model',score:1.00,nw:1.30,title:'Qwen2.5-Max超越GPT-4o',detail:'多项学术基准超GPT-4o/Claude3.5，推理成本仅1/20，性价比优势确立'},
+  {date:'2025-04-29',dim:'model',score:1.30,nw:1.50,title:'Qwen3-235B(MoE)震撼发布',detail:'全球最大MoE开源模型，推理/编码/数学全面超越GPT-4.5，业界轰动'},
+  {date:'2025-06-05',dim:'model',score:0.90,nw:1.20,title:'Qwen3-72B开源全球第一',detail:'Chatbot Arena盲评全球第一，超GPT-4o/Claude3.7，阿里AI全球第一梯队'},
+  {date:'2025-09-11',dim:'model',score:0.70,nw:1.00,title:'Qwen3-VL多模态发布',detail:'视觉理解超GPT-4V，视频/文档分析落地，商业场景大幅拓展'},
+  {date:'2025-11-20',dim:'model',score:0.80,nw:1.10,title:'Qwen3-Coder超GPT-4o代码',detail:'编程基准全球第一，GitHub Copilot级别开源替代，企业客户加速迁移'},
+  {date:'2026-01-15',dim:'model',score:0.60,nw:0.90,title:'Qwen4架构预告',detail:'全新架构，训练tokens超100T，性能提升预期，市场预热效应'},
+  {date:'2026-03-12',dim:'model',score:1.00,nw:1.30,title:'Qwen4正式发布',detail:'Qwen4-72B全面超越Claude3.7/GPT-4.5，阿里AI全球领先地位巩固'},
+  // ── 阿里云 ─────────────────────────────────────────
+  {date:'2022-05-26',dim:'cloud',score:-0.40,nw:1.00,title:'阿里云全面大幅降价',detail:'核心产品降价15-40%，以价换量，增速将受短期压制，利润承压'},
+  {date:'2022-11-05',dim:'cloud',score:0.40,nw:0.70,title:'亚洲最大数据中心竣工',detail:'张北超大规模数据中心群竣工，AI算力布局提前落子，长期正面'},
+  {date:'2023-02-23',dim:'cloud',score:-0.80,nw:1.40,title:'季报云增速仅+2%历史最低',detail:'FY23Q3增速骤降至+2%，受政企清退及价格战双重拖累，市场大幅失望'},
+  {date:'2023-05-18',dim:'cloud',score:0.30,nw:0.90,title:'云增速+4%小幅企稳',detail:'FY23Q4云增速4%，略有回升，显示降速冲击已过最坏阶段'},
+  {date:'2023-09-12',dim:'cloud',score:0.80,nw:1.20,title:'云独立化战略发布',detail:'云智能集团宣布独立上市，AI+云战略重新定位，市场对独立估值期待'},
+  {date:'2023-11-16',dim:'cloud',score:-1.20,nw:1.80,title:'云独立分拆计划宣布取消',detail:'美国芯片禁令扩大后放弃分拆，市场重大失望，股价单日跌9%，信任危机'},
+  {date:'2024-05-14',dim:'cloud',score:0.90,nw:1.40,title:'AI-aaS首次超越传统云收入',detail:'FY24Q4季报：AI相关收入占云超50%，三位数增长，AI变现转型验证'},
+  {date:'2024-08-15',dim:'cloud',score:0.50,nw:1.10,title:'云+7%但AI-aaS三位数增',detail:'FY25Q1增速温和但AI-aaS连续三季度三位数增长，结构性改善'},
+  {date:'2024-11-19',dim:'cloud',score:0.70,nw:1.20,title:'云+7%，AI单季创纪录',detail:'FY25Q2 AI-aaS季度收入历史新高，客户数量翻倍，AI基础设施建立'},
+  {date:'2025-02-20',dim:'cloud',score:0.90,nw:1.30,title:'云+13%拐点正式确认',detail:'FY25Q3增速13%，连续三季加速，AI-aaS渗透率超10%，台阶效应触发'},
+  {date:'2025-05-14',dim:'cloud',score:1.00,nw:1.40,title:'云+18%加速增长',detail:'FY25Q4增速18%，AI-aaS渗透率12%，高盛/大摩上调目标价至$180+'},
+  {date:'2025-08-13',dim:'cloud',score:0.90,nw:1.30,title:'云+22%超市场预期',detail:'FY26Q1增速22%，超预期约5ppt，国际云增速超40%，东南亚市占第一'},
+  {date:'2025-11-19',dim:'cloud',score:1.00,nw:1.40,title:'云+26%，AI渗透率15%',detail:'FY26Q2季报，渗透率超年初12%指引，管理层上调全年云增速目标'},
+  {date:'2026-02-19',dim:'cloud',score:1.20,nw:1.50,title:'云+33%创历史新高',detail:'FY26Q3季报爆表：大超预期(vs预期22%)，AI-aaS渗透率18%，股价涨12%'},
+  {date:'2026-04-10',dim:'cloud',score:1.00,nw:1.30,title:'W16季报云+33%延续',detail:'FY26Q4延续强劲，全年云收入$200亿级别，AI-aaS渗透率接近20%'},
+  // ── 自研芯片 ────────────────────────────────────────
+  {date:'2022-08-11',dim:'chip',score:0.40,nw:0.70,title:'含光910B量产发布',detail:'含光910B推理芯片量产，性能较910提升30%，国产替代迈出重要一步'},
+  {date:'2022-10-25',dim:'chip',score:0.30,nw:0.60,title:'平头哥C920 RISC-V芯片',detail:'C920采用RISC-V架构，架构自主意义重大，但短期商用规模有限'},
+  {date:'2023-03-23',dim:'chip',score:0.50,nw:0.90,title:'Yitian 710量产部署',detail:'倚天710在阿里云量产，算力成本降30%，降本效应验证，自研路线确立'},
+  {date:'2024-01-17',dim:'chip',score:0.70,nw:1.10,title:'全国产化GPU集群测试成功',detail:'千卡规模全国产化训练集群完成大模型验证，技术路线可行性确立'},
+  {date:'2024-06-18',dim:'chip',score:0.40,nw:0.80,title:'含光920下一代研发确认',detail:'平头哥CEO确认920研发进展，台积电5nm，性能提升2倍'},
+  {date:'2025-01-10',dim:'chip',score:1.10,nw:1.50,title:'全国产化万卡集群正式上线',detail:'全球首个全国产化万卡AI集群上线，含光910C通过DeepSeek训练验证，行业里程碑'},
+  {date:'2025-04-15',dim:'chip',score:0.80,nw:1.20,title:'含光910C大规模训练验证',detail:'910C在Qwen3-235B训练中稳定运行，与H800性能差距<15%，国产化可行'},
+  {date:'2025-09-03',dim:'chip',score:0.60,nw:1.00,title:'万卡集群扩容至3万卡',detail:'全国产化集群规模扩至3万卡，推理成本下降，为客户提供竞争力定价'},
+  {date:'2025-12-09',dim:'chip',score:0.80,nw:1.10,title:'含光920正式发布',detail:'台积电4nm，AI推理效率超H20，国产芯片达到国际主流水平的重要标志'},
+  {date:'2026-03-05',dim:'chip',score:0.70,nw:1.00,title:'全国产化集群达5万卡',detail:'5万卡全国产化集群完成，已服务50+大客户，国产芯片商业闭环初成'},
+  // ── 管理层人员流动 ──────────────────────────────────
+  {date:'2022-07-26',dim:'mg',score:-0.40,nw:1.20,pw:2.0,title:'蒋凡调职出海（VP·核心淘系负责人）',detail:'淘系核心负责人被调离，实权削弱，内部震荡信号，市场解读为人才流失'},
+  {date:'2022-12-21',dim:'mg',score:-0.30,nw:0.90,pw:1.5,title:'俞永福辞任高德等职（VP级）',detail:'俞永福低调辞任多个核心业务，内部人事整合信号'},
+  {date:'2023-03-27',dim:'mg',score:0.60,nw:1.30,pw:3.0,title:'马云回杭州现身（创始人·最高级）',detail:'马云结束1年多海外低调回国，被广泛解读为监管关系改善的最强信号'},
+  {date:'2023-05-10',dim:'mg',score:0.20,nw:1.20,pw:3.0,title:'张勇→吴泳铭接任CEO（CEO级）',detail:'张勇卸任，吴泳铭接任，AI战略重心转移，不确定性期带来短期震荡'},
+  {date:'2023-09-10',dim:'mg',score:-0.50,nw:1.30,pw:2.5,title:'张勇正式辞任云CEO（CEO级）',detail:'张勇辞任所有职务，与云分拆坍塌同步，创始团队核心时代终结，信心受损'},
+  {date:'2024-01-26',dim:'mg',score:1.00,nw:1.50,pw:3.0,title:'蔡崇信接任阿里主席（创始人·最高级）',detail:'联合创始人蔡崇信接任主席，信号极强：创始人信任重建+战略重新定锚'},
+  {date:'2024-02-07',dim:'mg',score:0.80,nw:1.30,pw:2.5,title:'吴泳铭发布AI战略重组（CEO级）',detail:'"AI驱动、互联网为基"战略，核心AI产品由CEO亲自分管，方向清晰'},
+  {date:'2024-09-17',dim:'mg',score:0.40,nw:1.00,pw:2.0,title:'吴泳铭亲自分管通义千问（CEO级）',detail:'CEO直接分管AI主力产品，最高战略专注信号，内外部信心提振'},
+  {date:'2025-02-14',dim:'mg',score:0.70,nw:1.30,pw:3.0,title:'马云大幅增持H股（创始人·最高级）',detail:'马云Q4增持逾$2亿，历史首次大规模增持H股，创始人信心最具分量的标志性动作'},
+  {date:'2025-05-21',dim:'mg',score:0.00,nw:0.80,pw:1.5,title:'CFO蒋伟接替徐宏（CFO级）',detail:'CFO稳健换届，蒋伟有云业务财务背景，过渡平稳，市场解读中性'},
+  {date:'2025-08-27',dim:'mg',score:0.40,nw:0.90,pw:1.5,title:'AI技术高管团队强化（VP级）',detail:'多名前顶级AI实验室科学家加入，研发深度持续强化'},
+  {date:'2026-01-13',dim:'mg',score:0.30,nw:0.80,pw:1.0,title:'管理层稳定·执行力持续验证',detail:'连续3季无重大人事变动，战略执行一致性高，机构投资者信任积累'},
+  // ── 战略决策 ────────────────────────────────────────
+  {date:'2022-05-09',dim:'mg',score:-0.50,nw:1.30,pw:1.0,title:'季报悲观·全年指引大幅下调',detail:'FY23指引远低于预期，管理层对宏观不确定，市场信心受损'},
+  {date:'2022-11-17',dim:'mg',score:0.40,nw:1.10,pw:1.0,title:'季报好于预期·蔡崇信发股东信',detail:'FY23Q2好于低预期，蔡崇信强调内在价值，坚持长期'},
+  {date:'2023-11-30',dim:'mg',score:0.50,nw:1.20,pw:1.0,title:'资本支出同比+350%·ALL IN AI',detail:'FY24Q2资本支出大幅增加，"AI不惜代价投入"信号，战略清晰度提升'},
+  {date:'2024-08-22',dim:'mg',score:1.00,nw:1.80,pw:1.0,title:'史上最大$250亿回购计划公告',detail:'2024-2027年$250亿回购，超过账面现金30%，资本配置历史里程碑'},
+  {date:'2024-11-21',dim:'mg',score:0.70,nw:1.30,pw:1.0,title:'回购执行$120亿·执行力超预期',detail:'半年回购$120亿（48% of $250B plan），执行速度超市场预期，承诺信誉确立'},
+  {date:'2025-02-20',dim:'mg',score:0.60,nw:1.20,pw:1.0,title:'首次特别股息+继续回购',detail:'FY25Q3同时宣布特别股息和继续回购，股东回报双管齐下'},
+  {date:'2025-05-14',dim:'mg',score:0.70,nw:1.30,pw:1.0,title:'发布云AI三年增长路线图',detail:'首次给出具体AI渗透率目标（2027年30%），配合详细资本支出计划'},
+  {date:'2025-08-13',dim:'mg',score:0.50,nw:1.10,pw:1.0,title:'东南亚AI云市场份额超50%',detail:'国际化战略首次获得具体数据验证，国际云增速超40%'},
+  {date:'2025-11-19',dim:'mg',score:0.60,nw:1.20,pw:1.0,title:'连续5季超预期·信誉重建完成',detail:'FY26Q2第五次超预期，从质疑到信任的历史性转变，估值溢价空间打开'},
+  {date:'2026-02-19',dim:'mg',score:0.50,nw:1.10,pw:1.0,title:'ROE创五年新高·资本效率验证',detail:'FY26Q3 ROE改善至18%，资本效率多年来首次获机构普遍认可'},
+  // ── 2026 AI研发人才出走 ────────────────────────────────
+  {date:'2026-01-15',dim:'mg',score:-1.20,nw:1.50,pw:2.0,title:'Qwen Code负责人惠斌元离职赴Meta',detail:'Qwen编程方向核心研究员惠斌元加入Meta，AI研发人才首次出走，行业广泛关注'},
+  {date:'2026-02-25',dim:'mg',score:-0.80,nw:1.20,pw:2.0,title:'余伯文（后训练负责人）离职',detail:'Qwen后训练核心负责人余伯文离职，继惠斌元之后第二位顶级AI研发人员出走'},
+  {date:'2026-03-03',dim:'mg',score:-1.80,nw:2.00,pw:2.5,title:'林俊旸（Qwen总技术负责人）辞职·三人才危机',detail:'Qwen最核心技术总负责人林俊旸辞职，CEO内部信确认，十周内三位顶级AI研发核心相继离职，海内外震动'},
+  {date:'2026-04-08',dim:'mg',score:1.20,nw:1.60,pw:2.5,title:'集团技术委员会成立·李飞飞任阿里云CTO',detail:'吴泳铭发内部信，设立集团技术委员会，李飞飞出任阿里云CTO，通义升级为大模型事业部，AI组织大重构'},
+  // ── 2026 模型迭代 ──────────────────────────────────────
+  {date:'2026-01-27',dim:'model',score:0.80,nw:1.20,title:'Qwen3-Max-Thinking发布·推理大幅提升',detail:'Qwen3-Max-Thinking上线，复杂推理能力对标顶级闭源模型，开源推理新高'},
+  {date:'2026-02-17',dim:'model',score:1.10,nw:1.50,title:'Qwen3.5发布·MAU从3100万暴涨至2亿+',detail:'Qwen3.5/Small系列发布，月活跃用户从3100万激增至2亿+，Token消耗创历史新高，应用爆发'},
+  {date:'2026-03-16',dim:'cloud',score:1.20,nw:1.60,title:'ATH事业群成立·以Token为核心重构AI战略',detail:'CEO宣布成立Alibaba Token Hub事业群，围绕创造/输送/应用Token重组AI组织架构，AI基建战略全面升级'},
+  {date:'2026-03-17',dim:'model',score:0.80,nw:1.20,title:'悟空Wukong AI Agent企业版发布',detail:'面向企业AI Agent工具悟空上线，支持Slack/Teams集成，阿里抢占ToB AI市场新入口'},
+  {date:'2026-03-30',dim:'model',score:0.70,nw:1.10,title:'Qwen3.5-Omni多模态发布',detail:'原生多模态大模型上线，支持文字/音频/视频/实时交互，应用场景大幅扩展'},
+  {date:'2026-04-02',dim:'model',score:1.50,nw:1.80,title:'Qwen3.6-Plus·1.4万亿Token单日记录',detail:'Qwen3.6-Plus单日处理1.4万亿Token打破OpenRouter历史记录，调用量暴增711%，Token时代爆发'},
+  {date:'2026-04-08',dim:'cloud',score:1.00,nw:1.40,title:'通义大模型事业部全面升级+周靖人主导',detail:'通义实验室升级为大模型事业部，周靖人任首席AI架构师，云AI一体化战略进入快速推进阶段'},
+  // ── W16→W17 增量（2026-04-07 至 2026-04-20）────────────
+  {date:'2026-04-07',dim:'mg',score:-1.60,nw:1.80,pw:1.0,title:'特朗普34%对华关税·BABA单周-37%',detail:'4/7特朗普宣布34%对华普遍关税，市场恐慌，BABA当日盘中最低$118.90，较周初$188暴跌37%；宏观黑天鹅冲击，与管理层执行无关但对股价影响最大'},
+  {date:'2026-04-07',dim:'model',score:-0.40,nw:0.80,title:'GLM-5.1开源754B MoE·SWE-Bench Pro全球第1',detail:'智谱GLM-5.1 MIT开源(754B MoE/40B激活)，SWE-Bench Pro 58.4全球第1，10万片Ascend 910B训练100%去CUDA，开源编程赛道压力'},
+  {date:'2026-04-12',dim:'model',score:-0.30,nw:0.75,title:'MiniMax M2.7开源229B MoE自我进化',detail:'HuggingFace开源229B MoE，SWE-Pro 56.22/Terminal Bench 57.0匹敌GPT-5.3-Codex；VIBE-Pro 55.6近Opus 4.6；100+轮自主scaffold；对Qwen3.5施压'},
+  {date:'2026-04-13',dim:'model',score:-0.40,nw:0.85,title:'Kimi K2.6 Code Preview·1T MoE 256K ctx',detail:'月之暗面Kimi K2.6 Code比Claude Sonnet便宜5×/6×，76%成本击败Opus 4.5，100 tok/s；K3立项3-4T；直接对位Qwen3-Coder'},
+  {date:'2026-04-18',dim:'chip',score:-0.30,nw:0.70,title:'字节$5.6B采购Ascend 950PR·信创算力绑定',detail:'ByteDance斥资$5.6B采购华为Ascend 950PR 750K片2026出货；Atlas 350达2.8×H20；NVIDIA暂停对华H200；SK hynix HBM售罄，阿里云底座竞争加压'},
+  {date:'2026-04-19',dim:'mg',score:-0.50,nw:1.00,pw:2.5,title:'林俊旸T+60观察期结束·去向仍未确认',detail:'原Qwen总技术负责人林俊旸(P10)3月辞职，T+60(4/19)观察窗口结束，公开渠道未见去向确认；身价亿美金传闻，对Qwen技术领导层稳定形成持续不确定性，T+90继续跟踪'},
+  {date:'2026-04-20',dim:'model',score:-0.50,nw:0.90,title:'DeepSeek V4发布临近·1T MoE 37B激活',detail:'DeepSeek V4 GitHub Stars 104.6K；首个跳过CUDA前沿模型，Ascend 950PR 35×H20推理；Reuters 4/4确认，直接竞品威胁Qwen3.6-Max开源领先地位'},
+  {date:'2026-04-20',dim:'model',score:0.90,nw:1.30,title:'Qwen3.6-Max-Preview发布',detail:'阿里发布Qwen3.6-Max-Preview，单日处理Token量延续1.4万亿记录节奏，应用侧调用量持续攀升，反击开源竞品对Qwen技术领先的质疑'},
+];
+
+// ═══════════════════════════════════════════════════════════════════
+//  双月锚点数据
+// ═══════════════════════════════════════════════════════════════════
+const BM_GMV    = [48.0,47.0,46.5,46.0,45.5,45.0,44.0,43.5,43.0,42.5,42.0,41.0,
+                   40.0,39.0,38.0,37.5,37.0,35.5,34.5,33.5,33.0,32.5,32.0,31.5,31.0];
+const BM_BABA   = [120,95,85,67,85,92,92,88,84,70,73,75,75,80,82,107,113,
+                   139,145,148,160,185,175,155,139.6];
+const BM_HSTECH = [8200,7200,5600,4400,5500,5800,5400,5000,4800,4500,5000,4800,
+                   5300,5200,5400,5800,5400,6200,6800,6500,7200,7000,8000,7800,5825.26];
+const BM_GMV_DY = [7.0,8.0,9.0,10.0,11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,
+                   19.0,20.0,21.0,22.0,22.5,23.0,23.5,24.0,24.0,24.0,24.0,24.0,24.0];
+const BM_GMV_PDD= [18.0,18.5,19.0,19.5,20.0,20.0,20.5,20.5,21.0,21.0,21.0,21.0,
+                   21.0,21.0,21.0,21.0,21.0,20.5,20.0,20.0,19.5,19.5,19.0,19.0,19.0];
+const BM_GMV_JD = [22.0,21.5,21.0,20.5,20.0,19.5,19.0,18.5,18.0,17.5,17.0,17.0,
+                   17.0,17.0,17.0,17.0,17.0,17.0,16.5,16.0,16.0,16.0,16.0,16.0,16.0];
+
+// ═══════════════════════════════════════════════════════════════════
+//  生成时间序列：2022-04-09 起周线，2026-04-01 起最近 20 天日线
+//  —— 20 天之前周频 / 最近 20 天日频（股价&指数均用此混合轴）
+// ═══════════════════════════════════════════════════════════════════
+const DAILY_CUT = new Date('2026-04-01');  // 日频切换日（含当日）
+const DAILY_END = new Date('2026-04-20');
+function fmtD(d){return `${String(d.getFullYear()).slice(2)}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;}
+function genMixed() {
+  const labels = [], dates = [], freq = [];
+  // 周线骨干
+  const d = new Date('2022-04-09');
+  while (d < DAILY_CUT) {
+    labels.push(fmtD(d));
+    dates.push(new Date(d));
+    freq.push('W');
+    d.setDate(d.getDate() + 7);
+  }
+  // 日线尾段（Apr 1 - Apr 20，20 天）
+  const d2 = new Date(DAILY_CUT);
+  while (d2 <= DAILY_END) {
+    labels.push(fmtD(d2));
+    dates.push(new Date(d2));
+    freq.push('D');
+    d2.setDate(d2.getDate() + 1);
+  }
+  return {labels, dates, freq};
+}
+const {labels: LABELS, dates: DATES, freq: FREQ} = genMixed();
+const N = LABELS.length;
+const N_WEEK = FREQ.indexOf('D');        // 周线段元素个数（=日线首索引）
+const N_DAILY = N - N_WEEK;              // =20
+const DAY_MS = 86400000;
+
+// 双月锚点 → 只映射到周线段（最后一个锚点对齐到周线最后一格）
+const ANCHOR_W = Array.from({length:25}, (_, i) => Math.round(i * (N_WEEK-1) / 24));
+
+// ═══════════════════════════════════════════════════════════════════
+//  线性展开：双月锚点 → 单周
+// ═══════════════════════════════════════════════════════════════════
+function expand(anchors) {
+  const r = new Array(N).fill(0);
+  for (let i = 0; i < ANCHOR_W.length - 1; i++) {
+    const w0 = ANCHOR_W[i], w1 = ANCHOR_W[i+1];
+    const v0 = anchors[i], v1 = anchors[i+1];
+    for (let j = w0; j < w1; j++) {
+      const t = (j - w0) / (w1 - w0);
+      r[j] = +((1-t)*v0 + t*v1).toFixed(3);
+    }
+  }
+  r[ANCHOR_W[ANCHOR_W.length-1]] = anchors[anchors.length-1];
+  for (let j = ANCHOR_W[ANCHOR_W.length-1]+1; j < N; j++)
+    r[j] = anchors[anchors.length-1];
+  return r;
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  EC：单周GMV份额变动（连续均摊，累计精确=-17）
+// ═══════════════════════════════════════════════════════════════════
+const EC_P = new Array(N).fill(0);
+for (let i = 0; i < ANCHOR_W.length - 1; i++) {
+  const w0 = ANCHOR_W[i], w1 = ANCHOR_W[i+1];
+  const delta = BM_GMV[i+1] - BM_GMV[i];
+  const perW = delta / (w1 - w0);
+  for (let j = w0; j < w1; j++) EC_P[j] = +perW.toFixed(5);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  AI+MG：新闻事件驱动打分 —— 混合频率日期→索引
+// ═══════════════════════════════════════════════════════════════════
+function dateToWeekIdx(dateStr) {
+  const d = new Date(dateStr);
+  if (d >= DAILY_CUT && d <= DAILY_END) {
+    // 日线段：逐日对齐
+    return N_WEEK + Math.round((d - DAILY_CUT) / DAY_MS);
+  }
+  if (d > DAILY_END) return N - 1;  // 超过末日，对齐到末日
+  // 周线段：按周对齐
+  const start = new Date('2022-04-09');
+  const days = Math.round((d - start) / DAY_MS);
+  const wi = Math.round(days / 7);
+  return Math.max(0, Math.min(N_WEEK - 1, wi));
+}
+
+// ── 可重算变量（let 供 calcScores() 重置）──────────────
+let MODEL_P, CLOUD_P, CHIP_P, MG_RAW, AI_ANNOT, MG_ANNOT;
+let CLOUD_ANNOT, MODEL_ANNOT, CHIP_ANNOT;
+let AI_P, MG_P, WT_P, EC_C, AI_C, MG_C, WT_C, CLOUD_C, MODEL_C, CHIP_C;
+
+// 累计函数
+function cumSum(arr) {
+  let s = 0;
+  return arr.map(v => (s = +(s + v).toFixed(4)));
+}
+
+function calcScores() {
+  MODEL_P = new Array(N).fill(0);
+  CLOUD_P = new Array(N).fill(0);
+  CHIP_P  = new Array(N).fill(0);
+  MG_RAW  = new Array(N).fill(0);
+  AI_ANNOT = {}; MG_ANNOT = {};
+  CLOUD_ANNOT = {}; MODEL_ANNOT = {}; CHIP_ANNOT = {};
+
+  NEWS.forEach(e => {
+    const idx = dateToWeekIdx(e.date);
+    if (idx < 0 || idx >= N) return;
+    const eff = +(e.score * e.nw * (e.pw || 1.0)).toFixed(3);
+    if (e.dim === 'model') {
+      MODEL_P[idx] += eff;
+      if (!AI_ANNOT[idx]) AI_ANNOT[idx] = [];
+      AI_ANNOT[idx].push({title:e.title, detail:e.detail, eff, dim:'model', color:'#9d73f5'});
+      if (Math.abs(eff)>0.3){if(!MODEL_ANNOT[idx])MODEL_ANNOT[idx]=[];MODEL_ANNOT[idx].push({title:e.title,detail:e.detail,eff});}
+    } else if (e.dim === 'cloud') {
+      CLOUD_P[idx] += eff;
+      if (!AI_ANNOT[idx]) AI_ANNOT[idx] = [];
+      AI_ANNOT[idx].push({title:e.title, detail:e.detail, eff, dim:'cloud', color:'#00c8e8'});
+      if (Math.abs(eff)>0.3){if(!CLOUD_ANNOT[idx])CLOUD_ANNOT[idx]=[];CLOUD_ANNOT[idx].push({title:e.title,detail:e.detail,eff});}
+    } else if (e.dim === 'chip') {
+      CHIP_P[idx] += eff;
+      if (!AI_ANNOT[idx]) AI_ANNOT[idx] = [];
+      AI_ANNOT[idx].push({title:e.title, detail:e.detail, eff, dim:'chip', color:'#17c987'});
+      if (Math.abs(eff)>0.2){if(!CHIP_ANNOT[idx])CHIP_ANNOT[idx]=[];CHIP_ANNOT[idx].push({title:e.title,detail:e.detail,eff});}
+    } else if (e.dim === 'mg') {
+      MG_RAW[idx] += eff;
+      if (!MG_ANNOT[idx]) MG_ANNOT[idx] = [];
+      MG_ANNOT[idx].push({title:e.title, detail:e.detail, eff, dim:'mg', color:'#f0b429'});
+    }
+  });
+
+  // AI综合 = 云×0.50 + 模型×0.30 + 芯片×0.20
+  AI_P = Array.from({length:N}, (_,i) =>
+    +(CLOUD_P[i]*0.50 + MODEL_P[i]*0.30 + CHIP_P[i]*0.20).toFixed(4)
+  );
+  MG_P = MG_RAW;
+  WT_P = Array.from({length:N}, (_,i) =>
+    +(EC_P[i]*0.35 + AI_P[i]*0.40 + MG_P[i]*0.25).toFixed(4)
+  );
+  EC_C = cumSum(EC_P);
+  AI_C = cumSum(AI_P);
+  MG_C = cumSum(MG_P);
+  WT_C = cumSum(WT_P);
+  CLOUD_C = cumSum(CLOUD_P);
+  MODEL_C = cumSum(MODEL_P);
+  CHIP_C  = cumSum(CHIP_P);
+}
+calcScores();
+
+// ═══════════════════════════════════════════════════════════════════
+//  BABA vs 恒生科技（归一化对比）
+//   · 周线段：双月锚点线性插值
+//   · 日线段：覆盖写入真实日线收盘价（Apr 1—Apr 20, 20天，周末前推）
+// ═══════════════════════════════════════════════════════════════════
+const BW_BABA   = expand(BM_BABA);
+const BW_HSTECH = expand(BM_HSTECH);
+const BW_GMV    = expand(BM_GMV);
+const BW_GMV_DY = expand(BM_GMV_DY);
+const BW_GMV_PDD= expand(BM_GMV_PDD);
+const BW_GMV_JD = expand(BM_GMV_JD);
+
+// ── 最近 20 天日线收盘价（Apr 1—Apr 20，2026） ──────────────
+//   股价数据：Apr 7 盘中最低 $118.90（关税黑天鹅），Apr 15 $133.28，
+//   Apr 17 $141.01，Apr 18 $140.93，Apr 20 $139.60（周末前推）
+const DAILY_BABA = [
+  // 04/01 Wed, 04/02 Thu, 04/03 Fri (Trump announce late), 04/04 Sat→fwd, 04/05 Sun→fwd,
+  188.0, 185.4, 175.2, 175.2, 175.2,
+  // 04/06 Mon (gap down), 04/07 Tue (tariff bottom), 04/08 Wed, 04/09 Thu, 04/10 Fri,
+  160.5, 118.9, 122.4, 126.8, 130.1,
+  // 04/11 Sat→fwd, 04/12 Sun→fwd, 04/13 Mon, 04/14 Tue, 04/15 Wed,
+  130.1, 130.1, 131.0, 132.2, 133.28,
+  // 04/16 Thu, 04/17 Fri, 04/18 Sat→fwd, 04/19 Sun→fwd, 04/20 Mon
+  137.4, 141.01, 141.01, 141.01, 139.60
+];
+// HSTECH：从周线锚点 7800 (≈2026-04-01) 向 5825.26 (2026-04-20) 的近似路径
+const DAILY_HSTECH = [
+  7800, 7720, 7350, 7350, 7350,
+  6950, 5180, 5340, 5480, 5610,
+  5610, 5610, 5630, 5680, 5710,
+  5760, 5800, 5800, 5800, 5825.26
+];
+
+// 覆盖写入 BW_BABA / BW_HSTECH 的日线段
+for (let k = 0; k < N_DAILY; k++) {
+  BW_BABA[N_WEEK + k]   = DAILY_BABA[k];
+  BW_HSTECH[N_WEEK + k] = DAILY_HSTECH[k];
+}
+
+// 归一化至100
+const BABA_N  = BW_BABA.map(v => +(v / BM_BABA[0] * 100).toFixed(2));
+const HSTECH_N= BW_HSTECH.map(v => +(v / BM_HSTECH[0] * 100).toFixed(2));
+// 超额收益归一化 = BABA归一 / HSTECH归一 × 100（基=100，>100超额，<100跑输）
+const ALPHA   = BABA_N.map((v,i) => +(v / HSTECH_N[i] * 100).toFixed(2));
+
+// 更新KPI（可重调用）
+function updateKPIs() {
+  const wtFinal = WT_C[N-1], aiFinal = AI_C[N-1], mgFinal = MG_C[N-1];
+  const alphaFinal = ALPHA[N-1];
+  document.getElementById('kv-wt').textContent = (wtFinal>=0?'+':'')+wtFinal.toFixed(2);
+  document.getElementById('kv-ai').textContent = (aiFinal>=0?'+':'')+aiFinal.toFixed(2);
+  document.getElementById('kv-mg').textContent = (mgFinal>=0?'+':'')+mgFinal.toFixed(2);
+  document.getElementById('kv-alpha').textContent = alphaFinal.toFixed(1);
+  const wt16 = WT_P[N-1];
+  const sig16 = wt16>=0.05?'🟢 绿灯':wt16>=0.01?'🟡 黄灯':'🔴 红灯';
+  document.getElementById('sig16-sub').textContent = sig16+' · '+(wt16>=0?'+':'')+wt16.toFixed(3);
+  document.getElementById('alpha-latest').textContent = alphaFinal.toFixed(1);
+}
+updateKPIs();
+
+// ═══════════════════════════════════════════════════════════════════
+//  图表全局设置
+// ═══════════════════════════════════════════════════════════════════
+let RANGE = 0; // 0=全部
+const AC = {};
+function rng2n(r) { return r === 0 ? N : Math.min(r, N); }
+function sl(arr, n) { return n >= arr.length ? arr : arr.slice(-n); }
+function offset(n) { return N - n; } // absolute index offset
+
+Chart.defaults.color = '#8899b4';
+Chart.defaults.borderColor = 'rgba(42,45,74,0.5)';
+Chart.defaults.plugins.legend.labels.boxWidth = 10;
+Chart.defaults.plugins.legend.labels.font = {size:11};
+Chart.defaults.plugins.tooltip.mode = 'index';
+Chart.defaults.plugins.tooltip.intersect = false;
+Chart.defaults.plugins.tooltip.backgroundColor = 'rgba(20,22,40,0.97)';
+Chart.defaults.plugins.tooltip.borderColor = '#2a2d4a';
+Chart.defaults.plugins.tooltip.borderWidth = 1;
+Chart.defaults.plugins.tooltip.titleColor = '#e8d88a';
+Chart.defaults.plugins.tooltip.bodyColor = '#c0d4ee';
+Chart.defaults.plugins.tooltip.padding = 10;
+
+// ═══════════════════════════════════════════════════════════════════
+//  主图（含⭐事件标注）
+// ═══════════════════════════════════════════════════════════════════
+function buildMain() {
+  const n = rng2n(RANGE);
+  const off = offset(n);
+  const lbls = sl(LABELS, n);
+  const rngTxt = RANGE===0?'2022/04—2026/04':RANGE===52?'近12个月':RANGE===26?'近6个月':'近3个月';
+
+  document.getElementById('mainTitle').innerHTML =
+    `📈 四维累计走势 + BABA归一 + 超额收益（${rngTxt}）<span class="bdg" id="mainBadge">左轴=分值 · 右轴=归一化 · 周线 ${N_WEEK} + 日线 ${N_DAILY}</span>`;
+
+  // ⭐ 在数据集上用pointStyle函数实现星标
+  function ptRadius(annot, n_, off_) {
+    return (ctx) => { const ai = off_ + ctx.dataIndex; return annot[ai] ? 6 : 0; };
+  }
+  function ptStyle(annot, n_, off_) {
+    return (ctx) => { return 'circle'; };
+  }
+  function ptHover(annot, n_, off_) {
+    return (ctx) => { const ai = off_ + ctx.dataIndex; return annot[ai] ? 9 : 4; };
+  }
+
+  const cfg = {
+    data:{labels: lbls, datasets:[
+      {type:'line', label:'加权综合累计', data: sl(WT_C,n),
+       borderColor:'#f0b429', backgroundColor:'rgba(240,180,41,0.06)',
+       fill:true, tension:0.15, borderWidth:2.5, pointRadius:0, pointHoverRadius:4, yAxisID:'y'},
+      {type:'line', label:'电商份额', data: sl(EC_C,n),
+       borderColor:'#e84393', backgroundColor:'transparent',
+       tension:0, borderWidth:1.8, pointRadius:0, pointHoverRadius:3,
+       borderDash:[5,3], yAxisID:'y'},
+      {type:'line', label:'AI基建+芯片', data: sl(AI_C,n),
+       borderColor:'#00c8e8', backgroundColor:'rgba(0,200,232,0.04)',
+       tension:0, borderWidth:2.0,
+       pointRadius: ptRadius(AI_ANNOT,n,off),
+       pointStyle: ptStyle(AI_ANNOT,n,off),
+       pointHoverRadius: ptHover(AI_ANNOT,n,off),
+       pointBackgroundColor:'#00c8e8', pointBorderColor:'#fff', pointBorderWidth:0.5,
+       yAxisID:'y'},
+      {type:'line', label:'管理能力', data: sl(MG_C,n),
+       borderColor:'#9d73f5', backgroundColor:'transparent',
+       tension:0, borderWidth:2.0, borderDash:[3,3],
+       pointRadius: ptRadius(MG_ANNOT,n,off),
+       pointStyle: ptStyle(MG_ANNOT,n,off),
+       pointHoverRadius: ptHover(MG_ANNOT,n,off),
+       pointBackgroundColor:'#9d73f5', pointBorderColor:'#fff', pointBorderWidth:0.5,
+       yAxisID:'y'},
+      {type:'line', label:'BABA归一(基=100)', data: sl(BABA_N,n),
+       borderColor:'#ff7c3c', backgroundColor:'rgba(255,124,60,0.08)',
+       fill:true, tension:0.2, borderWidth:2, pointRadius:0, pointHoverRadius:3, yAxisID:'y2'},
+      {type:'line', label:'超额收益(BABA-HSTECH)', data: sl(ALPHA,n),
+       borderColor:'rgba(23,201,135,0.6)', backgroundColor:'rgba(23,201,135,0.05)',
+       fill:true, tension:0.25, borderWidth:1.5, borderDash:[3,3],
+       pointRadius:0, pointHoverRadius:3, yAxisID:'y2'}
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:{duration:300},
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label: (ctx) => {
+              const absIdx = off + ctx.dataIndex;
+              const v = ctx.raw;
+              // AI基建 有星标
+              if (ctx.datasetIndex === 2 && AI_ANNOT[absIdx]) {
+                const lines = [`  AI基建累计: ${v>=0?'+':''}${v.toFixed(2)} pt ⭐`];
+                AI_ANNOT[absIdx].forEach(e => {
+                  const dIcon = e.dim==='model'?'🧠':e.dim==='cloud'?'☁️':'💎';
+                  lines.push(`  ${dIcon} ${e.title}`);
+                  lines.push(`      ${e.detail.slice(0,42)}…`);
+                });
+                return lines;
+              }
+              // 管理 有星标
+              if (ctx.datasetIndex === 3 && MG_ANNOT[absIdx]) {
+                const lines = [`  管理能力累计: ${v>=0?'+':''}${v.toFixed(2)} pt ⭐`];
+                MG_ANNOT[absIdx].forEach(e => {
+                  lines.push(`  🏛 ${e.title}`);
+                  lines.push(`      ${e.detail.slice(0,42)}…`);
+                });
+                return lines;
+              }
+              if (ctx.datasetIndex === 4) return `  BABA归一: ${v.toFixed(1)} (基=100)`;
+              if (ctx.datasetIndex === 5) return `  超额收益归一: ${v.toFixed(1)} (基=100·>100超额)`;
+              return `  ${ctx.dataset.label}: ${v>=0?'+':''}${v.toFixed(2)} pt`;
+            }
+          }
+        }
+      },
+      scales:{
+        x:{grid:{color:'rgba(42,45,74,0.3)'}, ticks:{maxTicksLimit:12, font:{size:10}}},
+        y:{position:'left',
+           title:{display:true, text:'累计分 (pt)', color:'#8899b4', font:{size:11}},
+           grid:{color:'rgba(42,45,74,0.35)'}},
+        y2:{position:'right',
+            title:{display:true, text:'归一化指数 (基=100)', color:'#ff7c3c', font:{size:11}},
+            grid:{drawOnChartArea:false},
+            ticks:{color:'#ff7c3c', callback:v=>v.toFixed(0)+'  '}}
+      }
+    }
+  };
+  if (AC.main) AC.main.destroy();
+  AC.main = new Chart(document.getElementById('mainChart'), cfg);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  AI子维度图（含⭐）
+// ═══════════════════════════════════════════════════════════════════
+function buildAi() {
+  const n = rng2n(RANGE), off = offset(n), lbls = sl(LABELS,n);
+  function pr(annot){return(ctx)=>{const ai=off+ctx.dataIndex;return annot[ai]?6:0;};}
+  function ps(annot){return()=>'circle';}
+  function ph(annot){return(ctx)=>{const ai=off+ctx.dataIndex;return annot[ai]?9:4;};}
+  const cfg={type:'line',data:{labels:lbls,datasets:[
+    {label:'AI综合累计',data:sl(AI_C,n),borderColor:'#00c8e8',
+     backgroundColor:'rgba(0,200,232,0.07)',fill:true,tension:0.1,borderWidth:2.5,pointRadius:0,pointHoverRadius:4},
+    {label:'☁️ 阿里云累计',data:sl(CLOUD_C,n),borderColor:'#22d3ee',
+     backgroundColor:'transparent',tension:0,borderWidth:1.8,
+     pointRadius:pr(CLOUD_ANNOT),pointStyle:ps(CLOUD_ANNOT),pointHoverRadius:ph(CLOUD_ANNOT),
+     pointBackgroundColor:'#22d3ee',pointBorderColor:'#fff',pointBorderWidth:0.5,borderDash:[5,3]},
+    {label:'🧠 AI模型累计',data:sl(MODEL_C,n),borderColor:'#9d73f5',
+     backgroundColor:'transparent',tension:0,borderWidth:1.8,
+     pointRadius:pr(MODEL_ANNOT),pointStyle:ps(MODEL_ANNOT),pointHoverRadius:ph(MODEL_ANNOT),
+     pointBackgroundColor:'#9d73f5',pointBorderColor:'#fff',pointBorderWidth:0.5},
+    {label:'💎 自研芯片累计',data:sl(CHIP_C,n),borderColor:'#17c987',
+     backgroundColor:'transparent',tension:0,borderWidth:1.8,
+     pointRadius:pr(CHIP_ANNOT),pointStyle:ps(CHIP_ANNOT),pointHoverRadius:ph(CHIP_ANNOT),
+     pointBackgroundColor:'#17c987',pointBorderColor:'#fff',pointBorderWidth:0.5,borderDash:[3,3]}
+  ]},options:{
+    responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{position:'top'},
+      tooltip:{callbacks:{label:(ctx)=>{
+        const absIdx=off+ctx.dataIndex, v=ctx.raw;
+        const annotMap=[null,CLOUD_ANNOT,MODEL_ANNOT,CHIP_ANNOT];
+        const amap=annotMap[ctx.datasetIndex];
+        if(amap&&amap[absIdx]){
+          const lines=[`  ${ctx.dataset.label}: ${v>=0?'+':''}${v.toFixed(2)} pt ⭐`];
+          amap[absIdx].forEach(e=>{
+            lines.push(`  📌 ${e.title}`);
+            lines.push(`      ${e.detail.slice(0,45)}…`);
+          });
+          return lines;
+        }
+        return `  ${ctx.dataset.label}: ${v>=0?'+':''}${v.toFixed(2)} pt`;
+      }}}},
+    scales:{x:{grid:{color:'rgba(42,45,74,0.3)'},ticks:{maxTicksLimit:12,font:{size:10}}},
+            y:{grid:{color:'rgba(42,45,74,0.35)'},title:{display:true,text:'累计分(pt)',font:{size:11}}}}
+  }};
+  if(AC.ai) AC.ai.destroy();
+  AC.ai = new Chart(document.getElementById('aiSubChart'),cfg);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  管理能力图（含⭐）
+// ═══════════════════════════════════════════════════════════════════
+function buildMgmt() {
+  const n = rng2n(RANGE), off = offset(n), lbls = sl(LABELS,n);
+  const mgSl = sl(MG_C,n);
+  const cfg={data:{labels:lbls,datasets:[
+    {type:'bar',label:'MG单周事件',data:sl(MG_P,n),
+     backgroundColor:sl(MG_P,n).map(v=>v>0?'rgba(157,115,245,0.65)':v<0?'rgba(232,64,64,0.65)':'rgba(100,116,139,0.2)'),
+     borderRadius:2,barPercentage:0.7,yAxisID:'y'},
+    {type:'line',label:'管理累计',data:mgSl,
+     borderColor:'#9d73f5',backgroundColor:'transparent',
+     tension:0,borderWidth:2.5,
+     pointRadius:(ctx)=>{const ai=off+ctx.dataIndex;return MG_ANNOT[ai]?6:0;},
+     pointStyle:()=>'circle',
+     pointHoverRadius:(ctx)=>{const ai=off+ctx.dataIndex;return MG_ANNOT[ai]?9:4;},
+     pointBackgroundColor:'#9d73f5',pointBorderColor:'#fff',pointBorderWidth:0.8,
+     yAxisID:'y2'}
+  ]},options:{
+    responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{position:'top'},
+      tooltip:{callbacks:{label:(ctx)=>{
+        const absIdx=off+ctx.dataIndex,v=ctx.raw;
+        if(ctx.datasetIndex===1&&MG_ANNOT[absIdx]){
+          const lines=[`  管理累计: ${v>=0?'+':''}${v.toFixed(2)} pt ⭐`];
+          MG_ANNOT[absIdx].forEach(e=>{
+            lines.push(`  🏛 ${e.title}`);
+            lines.push(`      ${e.detail.slice(0,45)}…`);
+          });
+          return lines;
+        }
+        return `  ${ctx.dataset.label}: ${v>=0?'+':''}${v.toFixed(3)}`;
+      }}}},
+    scales:{x:{grid:{color:'rgba(42,45,74,0.3)'},ticks:{maxTicksLimit:12,font:{size:10}}},
+            y:{position:'left',title:{display:true,text:'单周事件分'},grid:{color:'rgba(42,45,74,0.35)'}},
+            y2:{position:'right',title:{display:true,text:'管理累计'},grid:{drawOnChartArea:false}}}
+  }};
+  if(AC.mgmt) AC.mgmt.destroy();
+  AC.mgmt = new Chart(document.getElementById('mgmtChart'),cfg);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  EC图 & GMV格局图
+// ═══════════════════════════════════════════════════════════════════
+function buildEcom() {
+  const n=rng2n(RANGE), lbls=sl(LABELS,n), ecSl=sl(EC_P,n);
+  const cfg={data:{labels:lbls,datasets:[
+    {type:'bar',label:'EC单周(ppt)',data:ecSl,
+     backgroundColor:ecSl.map(v=>v>=0?'rgba(232,67,147,0.5)':'rgba(232,64,64,0.5)'),
+     borderRadius:1,barPercentage:0.9,yAxisID:'y'},
+    {type:'line',label:'EC累计',data:sl(EC_C,n),
+     borderColor:'#e84393',backgroundColor:'transparent',
+     tension:0,borderWidth:2.2,pointRadius:0,yAxisID:'y2'}
+  ]},options:{
+    responsive:true,maintainAspectRatio:false,animation:{duration:300},
+    plugins:{legend:{position:'top'}},
+    scales:{x:{grid:{color:'rgba(42,45,74,0.3)'},ticks:{maxTicksLimit:12,font:{size:10}}},
+            y:{position:'left',title:{display:true,text:'单周(ppt)'},grid:{color:'rgba(42,45,74,0.35)'},
+               afterDataLimits(a){a.min=Math.min(-0.15,a.min);}},
+            y2:{position:'right',title:{display:true,text:'累计(ppt)'},grid:{drawOnChartArea:false},
+                afterDataLimits(a){a.min=Math.min(-18,a.min);}}}
+  }};
+  if(AC.ecom) AC.ecom.destroy();
+  AC.ecom = new Chart(document.getElementById('ecomChart'),cfg);
+}
+
+// 统一刷新主要可刷新图
+function setRange(r, btn) {
+  RANGE = r===0 ? 0 : r;
+  document.querySelectorAll('.rbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildMain(); buildAi(); buildMgmt(); buildEcom();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  静态图（仅初始化一次）
+// ═══════════════════════════════════════════════════════════════════
+
+// 雷达图（W16）
+(function(){
+  const lastAI=[CLOUD_P[N-1],MODEL_P[N-1],CHIP_P[N-1]];
+  const avgOf=arr=>+(arr.reduce((a,b)=>a+b,0)/N).toFixed(4);
+  AC.radar=new Chart(document.getElementById('radarChart'),{
+    type:'radar',
+    data:{labels:['☁️ 阿里云','🧠 AI模型','💎 自研芯片','🛒 电商份额','🏛 管理执行'],
+      datasets:[
+        {label:'W17当周',data:[CLOUD_P[N-1],MODEL_P[N-1],CHIP_P[N-1],EC_P[N-1],MG_P[N-1]],
+         borderColor:'#f0b429',backgroundColor:'rgba(240,180,41,0.13)',pointBackgroundColor:'#f0b429',borderWidth:2},
+        {label:'4年均值',data:[avgOf(CLOUD_P),avgOf(MODEL_P),avgOf(CHIP_P),avgOf(EC_P),avgOf(MG_P)],
+         borderColor:'#4a90d9',backgroundColor:'rgba(74,144,217,0.06)',pointBackgroundColor:'#4a90d9',borderWidth:1.5,borderDash:[4,3]}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'top'}},
+      scales:{r:{ticks:{stepSize:0.2,font:{size:9},backdropColor:'transparent'},
+                 grid:{color:'rgba(42,45,74,0.7)'},pointLabels:{font:{size:11}}}}}
+  });
+})();
+
+// 近10期柱状
+(function(){
+  const r10=WT_P.slice(-10), l10=LABELS.slice(-10);
+  AC.recent=new Chart(document.getElementById('recentBar'),{
+    type:'bar',
+    data:{labels:l10,datasets:[{label:'加权单周得分',data:r10,
+      backgroundColor:r10.map(v=>v>=0.05?'rgba(23,201,135,0.75)':v>=0.01?'rgba(240,180,41,0.75)':'rgba(232,64,64,0.72)'),
+      borderRadius:4}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{grid:{color:'rgba(42,45,74,0.3)'},ticks:{font:{size:9}}},
+              y:{grid:{color:'rgba(42,45,74,0.35)'},title:{display:true,text:'单周加权分',font:{size:10}},
+                 afterDataLimits(a){a.min=Math.min(-0.1,a.min);}}}
+    }
+  });
+})();
+
+// GMV格局图（全周期，静态）
+(function(){
+  AC.gmv=new Chart(document.getElementById('gmvChart'),{
+    type:'line',
+    data:{labels:LABELS,datasets:[
+      {label:'淘天',data:BW_GMV,borderColor:'#f0b429',backgroundColor:'rgba(240,180,41,0.07)',fill:true,tension:0.2,borderWidth:2,pointRadius:0},
+      {label:'抖音',data:BW_GMV_DY,borderColor:'#e84040',backgroundColor:'transparent',tension:0.2,borderWidth:1.8,pointRadius:0},
+      {label:'拼多多',data:BW_GMV_PDD,borderColor:'#9d73f5',backgroundColor:'transparent',tension:0.2,borderWidth:1.5,pointRadius:0,borderDash:[5,3]},
+      {label:'京东',data:BW_GMV_JD,borderColor:'#4a90d9',backgroundColor:'transparent',tension:0.2,borderWidth:1.5,pointRadius:0,borderDash:[3,3]}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top'},tooltip:{callbacks:{label:ctx=>` ${ctx.dataset.label}: ${ctx.raw.toFixed(1)}%`}}},
+      scales:{x:{grid:{color:'rgba(42,45,74,0.3)'},ticks:{maxTicksLimit:12,font:{size:10}}},
+              y:{grid:{color:'rgba(42,45,74,0.35)'},title:{display:true,text:'GMV份额(%)'},min:0,max:55}}
+    }
+  });
+})();
+
+// 回测归一化图
+(function(){
+  const bMin=Math.min(...BW_BABA),bMax=Math.max(...BW_BABA);
+  const wMin=Math.min(...WT_C),wMax=Math.max(...WT_C);
+  const bNorm=BW_BABA.map(v=>+((v-bMin)/(bMax-bMin)*(wMax-wMin)+wMin).toFixed(3));
+  AC.bt=new Chart(document.getElementById('backtestChart'),{
+    type:'line',
+    data:{labels:LABELS,datasets:[
+      {label:'综合加权累计',data:WT_C,borderColor:'#f0b429',backgroundColor:'rgba(240,180,41,0.09)',fill:true,tension:0.1,borderWidth:2.2,pointRadius:0},
+      {label:'BABA归一化',data:bNorm,borderColor:'#ff7c3c',backgroundColor:'transparent',tension:0.2,borderWidth:2,pointRadius:0,borderDash:[5,3]}
+    ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'top'}},
+      scales:{x:{grid:{color:'rgba(42,45,74,0.3)'},ticks:{maxTicksLimit:12,font:{size:10}}},
+              y:{grid:{color:'rgba(42,45,74,0.35)'},title:{display:true,text:'标准化数值'}}}
+    }
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+//  事件清单（动态渲染到DOM）
+// ═══════════════════════════════════════════════════════════════════
+function renderEventList(containerId, dims) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const filtered = NEWS.filter(e => dims.includes(e.dim))
+    .sort((a,b) => a.date.localeCompare(b.date));
+  el.innerHTML = '';
+  filtered.forEach(e => {
+    const eff = +(e.score * e.nw * (e.pw || 1)).toFixed(2);
+    const isPos = eff > 0;
+    const cls = isPos ? 'ev-g' : (eff < 0 ? 'ev-r' : 'ev-y');
+    const dIcon = e.dim==='model'?'🧠':e.dim==='cloud'?'☁️':e.dim==='chip'?'💎':'🏛';
+    const pwTxt = e.pw && e.pw > 1 ? ` · 职级×${e.pw}` : '';
+    const div = document.createElement('div');
+    div.className = `evi ${cls}`;
+    div.innerHTML = `<span class="ev-d">${e.date.slice(2,7)}</span>
+      <span class="ev-b">${dIcon} <strong>${e.title}</strong>（nw=${e.nw}${pwTxt}）<br>
+      <span style="color:#6a7a9a;font-size:11px">${e.detail}</span></span>
+      <span class="ev-s" style="color:${isPos?'#17c987':eff<0?'#e84040':'#8899b4'}">${isPos?'+':''}${eff.toFixed(2)}</span>`;
+    el.appendChild(div);
+  });
+}
+// (called inside rebuildAll below)
+
+// ═══════════════════════════════════════════════════════════════════
+//  完整数据表（每4周一行）
+// ═══════════════════════════════════════════════════════════════════
+(function(){
+  const tbl = document.getElementById('fullTable');
+  const hdrs=['日期','EC周(ppt)','AI周','MG周','加权周','EC累计','AI累计','MG累计','WT累计','BABA归一','超额归一','信号'];
+  const thead = tbl.createTHead(); const hr = thead.insertRow();
+  hdrs.forEach(h=>{const th=document.createElement('th');th.textContent=h;hr.appendChild(th);});
+  const tbody = tbl.createTBody();
+  const step = 4;
+  for(let i=0;i<N;i+=step){
+    const wt=WT_P[i];
+    const sig=wt>=0.05?'🟢':wt>=0.01?'🟡':'🔴';
+    const hasStar = (AI_ANNOT[i]||MG_ANNOT[i]) ? '⭐' : '';
+    const vals=[LABELS[i]+hasStar,
+      EC_P[i].toFixed(4),AI_P[i].toFixed(3),MG_P[i].toFixed(3),wt.toFixed(3),
+      EC_C[i].toFixed(2),AI_C[i].toFixed(2),MG_C[i].toFixed(2),WT_C[i].toFixed(2),
+      BABA_N[i].toFixed(1),ALPHA[i].toFixed(1),sig
+    ];
+    const row=tbody.insertRow();
+    vals.forEach((v,ci)=>{
+      const td=row.insertCell();td.textContent=v;
+      if(ci===0) td.className='prd';
+      if([1,2,3,4,5,6,7,8].includes(ci)){
+        const n=parseFloat(v);
+        if(!isNaN(n)) td.style.color=n>0?'#17c987':n<0?'#e84040':'#8899b4';
+      }
+      if(ci===10){// alpha
+        const n=parseFloat(v);
+        td.style.color=n>0?'#17c987':n<0?'#e84040':'#8899b4';
+        if(!isNaN(n)) td.style.fontWeight='600';
+      }
+    });
+  }
+})();
+
+// ═══════════════════════════════════════════════════════════════════
+//  📝 新闻编辑器：参数微调表格
+// ═══════════════════════════════════════════════════════════════════
+function buildEditTable() {
+  const sorted = [...NEWS].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,30);
+  const sty = 'background:#0e101c;border:1px solid var(--border);color:var(--text);padding:2px 4px;border-radius:4px;font-size:11px;width:52px;font-family:inherit';
+  let html = `<table style="width:100%;font-size:11px;border-collapse:collapse">
+    <tr style="color:var(--muted);text-align:center">
+      <th style="text-align:left;padding:5px 8px">日期</th>
+      <th>维度</th><th style="text-align:left;padding:5px">标题</th>
+      <th>score</th><th>nw</th><th>pw</th><th>有效分</th>
+    </tr>`;
+  sorted.forEach(e => {
+    const origIdx = NEWS.indexOf(e);
+    const eff = +(e.score * e.nw * (e.pw||1)).toFixed(2);
+    const clr = eff>0?'#17c987':eff<0?'#e84040':'#8899b4';
+    const dIcon = e.dim==='model'?'🧠':e.dim==='cloud'?'☁️':e.dim==='chip'?'💎':'🏛';
+    const pwDis = e.dim!=='mg' ? 'disabled style="'+sty+';opacity:0.35"' : 'style="'+sty+'"';
+    html += `<tr data-idx="${origIdx}" style="border-bottom:1px solid rgba(42,45,74,0.4)">
+      <td style="padding:5px 8px;color:var(--muted);white-space:nowrap">${e.date.slice(2)}</td>
+      <td style="text-align:center;padding:5px">${dIcon}</td>
+      <td style="padding:5px;color:var(--text);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${e.title}">${e.title}</td>
+      <td style="padding:4px;text-align:center"><input type="number" value="${e.score}" step="0.1" min="-3" max="3" style="${sty}" class="edit-score" data-idx="${origIdx}"></td>
+      <td style="padding:4px;text-align:center"><input type="number" value="${e.nw}" step="0.1" min="0.3" max="2.5" style="${sty}" class="edit-nw" data-idx="${origIdx}"></td>
+      <td style="padding:4px;text-align:center"><input type="number" value="${e.pw||1}" step="0.5" min="1" max="3" ${pwDis} class="edit-pw" data-idx="${origIdx}"></td>
+      <td style="padding:4px;text-align:center;font-weight:700;color:${clr}">${eff>=0?'+':''}${eff}</td>
+    </tr>`;
+  });
+  html += '</table>';
+  document.getElementById('editTable').innerHTML = html;
+}
+
+function applyEdits() {
+  document.querySelectorAll('.edit-score').forEach(inp => {
+    const i = +inp.dataset.idx; const v = parseFloat(inp.value);
+    if (!isNaN(v)) NEWS[i].score = v;
+  });
+  document.querySelectorAll('.edit-nw').forEach(inp => {
+    const i = +inp.dataset.idx; const v = parseFloat(inp.value);
+    if (!isNaN(v)) NEWS[i].nw = v;
+  });
+  document.querySelectorAll('.edit-pw').forEach(inp => {
+    const i = +inp.dataset.idx;
+    if (NEWS[i].dim === 'mg') { const v = parseFloat(inp.value); if(!isNaN(v)) NEWS[i].pw = v; }
+  });
+  rebuildAll();
+}
+
+function submitNewEvent() {
+  const date  = document.getElementById('ne-date').value;
+  const dim   = document.getElementById('ne-dim').value;
+  const score = parseFloat(document.getElementById('ne-score').value);
+  const nw    = parseFloat(document.getElementById('ne-nw').value);
+  const title = document.getElementById('ne-title').value.trim();
+  const detail= document.getElementById('ne-detail').value.trim();
+  const msg   = document.getElementById('ne-msg');
+  if (!date || !title) { msg.textContent='⚠ 日期和标题必填'; msg.style.color='#e84040'; return; }
+  if (isNaN(score)||isNaN(nw)) { msg.textContent='⚠ score/nw 须为数字'; msg.style.color='#e84040'; return; }
+  const ev = {date, dim, score, nw, title, detail: detail||'用户自定义事件'};
+  if (dim==='mg') ev.pw = parseFloat(document.getElementById('ne-pw').value)||1.0;
+  NEWS.push(ev);
+  NEWS.sort((a,b)=>a.date.localeCompare(b.date));
+  rebuildAll();
+  document.getElementById('ne-title').value='';
+  document.getElementById('ne-detail').value='';
+  msg.textContent=`✓ 已添加「${title}」并重算图表`;
+  msg.style.color='#17c987';
+  setTimeout(()=>msg.textContent='',4000);
+}
+
+// ─── 统一重建（calcScores → 图表 → 列表）───────────────
+function rebuildAll() {
+  calcScores();
+  updateKPIs();
+  buildMain(); buildAi(); buildMgmt(); buildEcom();
+  renderEventList('aiEventList', ['model','cloud','chip']);
+  renderEventList('mgEventList', ['mg']);
+  renderEventList('newsEventList', ['model','cloud','chip','mg']);
+  document.getElementById('newsCount').textContent = NEWS.length;
+  buildEditTable();
+}
+
+// Tab切换
+function sw(id, btn) {
+  document.querySelectorAll('.tpane').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tbtn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pane-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── 初始渲染 ───────────────────────────────────────────
+rebuildAll();
+// 静态图只初始化一次（由下方 IIFE 完成）
+
+// ═══════════════════════════════════════════════════════════════════
+//  🧭 辅助监测：合并子任务的最新结果（数据源 baba.db 2026-04-20 snapshot）
+// ═══════════════════════════════════════════════════════════════════
+const AUX = {
+  radar: [
+    // person, role, group, light, signal, pw, detail
+    ['吴泳铭','集团 CEO','核心决策层','绿','公开发声',3.0,'全员信宣布技委会'],
+    ['蔡崇信','董事会主席','核心决策层','绿','正常',3.0,'股东信强调AI时代'],
+    ['马云','创始人','核心决策层','绿','正常',3.0,'低调模式'],
+    ['蒋凡','电商事业群 CEO','核心决策层','绿','架构调整',3.0,'管辖范围再扩'],
+    ['蒋伟','集团 CFO','核心决策层','绿','公开发声',2.0,'FY26Q3财报电话会后与机构沟通'],
+    ['徐宏','前集团 CFO','核心决策层','黄','数据缺失',2.0,'12个月追踪期将到期'],
+    ['李飞飞','阿里云 CTO (2026-04-08 上任)','技术/AI 高管','绿','任命确认',2.5,'4-08 出任阿里云CTO'],
+    ['周靖人','通义大模型事业部负责人','技术/AI 高管','绿','任命确认',2.5,'通义实验室升级为事业部'],
+    ['林俊旸','原 Qwen 总技术负责人','技术/AI 高管','黄','T+60观察',2.5,'观察期结束，去向未确认'],
+    ['丁磊','达摩院院长','技术/AI 高管','灰','数据缺失',2.5,'无公开动态'],
+    ['雷雁群','淘宝闪购 CEO (4-08 接任)','业务线负责人','绿','任命确认',2.0,'4-08 接任淘宝闪购CEO'],
+    ['吴嘉','菜鸟集团 CEO','业务线负责人','绿','正常',2.0,'本周无公开动态'],
+    ['井贤栋','蚂蚁集团董事长','蚂蚁高管','绿','正常',1.5,'蚂蚁无重大动态'],
+    ['Jerry Yang','独立董事','独立董事','绿','正常',1.5,'无本周公开异动'],
+    ['Walter Kwauk','独立董事','独立董事','绿','正常',1.5,'无本周异动']
+  ],
+  alerts: [
+    // date, severity, type, target, role, detail
+    ['2026-04-19','P1-高','竞对吸纳','惠斌元(惠彬原)','Qwen Code 原负责人','反向补录T+90周期完成：惠斌元加入 Meta 去向多源确认，升级为竞对吸纳。AI核心人才首次流向硅谷竞对。'],
+    ['2026-04-19','P1-高','竞对吸纳','郁博文(余伯文)','Qwen 后训练原负责人','多源合流补录：郁博文加入字节Seed【竞对】任后。继惠斌元后第二位顶级 Qwen 研究员流出。'],
+    ['2026-04-19','P0','管理层动向','林俊旸 · T+60 观察结束','Qwen 原总技术负责人','T+60 (2026-04-19) 窗口结束，去向仍未确认，身价亿美金传闻，T+90 (5-19) 继续跟踪。']
+  ],
+  events: [
+    // date, week, title, dim, score, nw, pw, signal, confidence
+    ['2026-04-20','W17','DeepSeek V4 发布临近 (1T MoE / Ascend 950PR 推理)','model',-0.5,0.9,0.8,'竞品冲击','medium'],
+    ['2026-04-20','W17','Qwen3.6-Max-Preview 发布','model',0.9,1.3,1.0,'模型发布','high'],
+    ['2026-04-19','W17','林俊旸 T+60 观察期结束 · 去向仍未确认','mg',-0.5,1.0,2.5,'活跃度预警','medium'],
+    ['2026-04-18','W17','ByteDance $5.6B 采购 Ascend 950PR 750K 片','chip',-0.3,0.7,0.6,'芯片','medium'],
+    ['2026-04-13','W17','Kimi K2.6 Code Preview (1T MoE 256K)','model',-0.4,0.85,0.7,'竞品冲击','medium'],
+    ['2026-04-12','W17','MiniMax M2.7 HF开源 229B MoE 自我进化','model',-0.3,0.75,0.6,'竞品冲击','medium'],
+    ['2026-04-08','W16','通义大模型事业部升级·周靖人主导·李飞飞任阿里云CTO','mg/cloud',1.0,1.4,2.5,'架构重组','high'],
+    ['2026-04-07','W17','GLM-5.1 MIT开源 754B MoE · SWE-Bench Pro 第1','model',-0.4,0.8,0.7,'竞品冲击','medium'],
+    ['2026-04-07','W17','特朗普34%对华关税·BABA单周-37%','mg',-1.6,1.8,1.0,'宏观黑天鹅','high'],
+    ['2026-04-03','W16','Trump 关税预告 · BABA 高位 $188 调整开启','mg',-0.5,1.0,1.0,'宏观','medium']
+  ],
+  qwen: [
+    // benchmark, model, competitor_top3, notes, url
+    ['LMSYS Arena','Qwen3.6-Plus (最强开源)','Claude Opus 4.6 Thinking(1504) / Gemini 3.1 Pro(1493) / Grok 4.20 Beta1(1491)','开源前沿阵营，未进text arena Top5','https://openlm.ai/chatbot-arena/'],
+    ['Coding Arena','Qwen3-Coder (480B)','Claude Opus 4.6(1549) / Claude Opus 4.6 Thinking(1545) / Claude Sonnet 4.6(1523)','Claude 霸榜 Top5；Qwen3-Coder 仍是开源编码最强','https://aidevdayindia.org/'],
+    ['HF Trending','Qwen3.5 (397B-A17B MoE)','DeepSeek-V3.5 / Llama-4-Scout / Kimi-K2','4-02 Qwen3.6-Plus创OpenRouter单日1.4万亿Token记录,调用量↑711%','https://huggingface.co/spaces/open-llm-leaderboard/open_llm_leaderboard']
+  ],
+  cloud: [
+    // date, week, vendor, type, impact, detail
+    ['2026-04-11','W15','华为云','产品发布','负面','发布昇腾 910C 集群服务，以信创算力绑定政企客户'],
+    ['2026-04-09','W15','腾讯云','价格调整','正面','二次上调 AI 算力报价 +5%，跟进阿里云挺价行动'],
+    ['2026-03-18','W12','火山引擎','价格调整','负面','宣布暂不随阿里云涨价，继续以低价渗透'],
+    ['2026-03-18','W12','京东云','价格调整','负面','反向降价约 16%，抢占中小 B 端客户'],
+    ['2026-03-18','W12','百度智能云','价格调整','正面','与阿里云同日上调 API 报价，头部三家联合挺价'],
+    ['2026-02-02','W06','腾讯云','战略','正面','「不追求第一」战略收敛，放缓政企大单冲突']
+  ]
+};
+
+function lightDot(l) {
+  const colorMap = {'绿':'var(--green)','黄':'var(--yellow)','红':'var(--red)','灰':'#64748b'};
+  return `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${colorMap[l]||'#64748b'};margin-right:5px;vertical-align:middle"></span>`;
+}
+
+function renderAuxRadar() {
+  const el = document.getElementById('aux-radar');
+  if (!el) return;
+  // 分组聚合统计
+  const groups = {};
+  AUX.radar.forEach(r => {
+    const g = r[2];
+    if (!groups[g]) groups[g] = {green:0,yellow:0,red:0,gray:0,members:[]};
+    if (r[3]==='绿') groups[g].green++;
+    else if (r[3]==='黄') groups[g].yellow++;
+    else if (r[3]==='红') groups[g].red++;
+    else groups[g].gray++;
+    groups[g].members.push(r);
+  });
+  let html = `<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px">`;
+  Object.keys(groups).forEach(g => {
+    const s = groups[g];
+    html += `<div style="background:#0e101c;border:1px solid var(--border);border-radius:6px;padding:8px 6px;text-align:center">
+      <div style="font-size:10px;color:var(--muted);margin-bottom:3px">${g}</div>
+      <div style="font-size:15px;font-weight:700">
+        <span class="pos">${s.green}🟢</span>
+        ${s.yellow?'<span class="ky">'+s.yellow+'🟡</span> ':''}${s.red?'<span class="neg">'+s.red+'🔴</span> ':''}${s.gray?'<span style="color:#64748b">'+s.gray+'⚪</span>':''}
+      </div>
+    </div>`;
+  });
+  html += `</div><div style="display:flex;flex-direction:column;gap:5px">`;
+  AUX.radar.forEach(r => {
+    html += `<div style="display:flex;gap:8px;padding:6px 10px;background:#141724;border-radius:5px;font-size:11.5px;align-items:center">
+      ${lightDot(r[3])}
+      <span style="color:#c0d4ee;font-weight:600;min-width:90px">${r[0]}</span>
+      <span style="color:var(--muted);min-width:170px">${r[1]}</span>
+      <span style="color:var(--yellow);font-size:10.5px;min-width:70px">${r[4]}</span>
+      <span style="color:var(--muted);font-size:10.5px;flex:1">${r[6]}</span>
+      <span style="color:#8899b4;font-size:10px">pw×${r[5]}</span>
+    </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function renderAuxAlerts() {
+  const el = document.getElementById('aux-alerts');
+  if (!el) return;
+  let html = `<div style="display:flex;flex-direction:column;gap:8px">`;
+  AUX.alerts.forEach(a => {
+    const sevColor = a[1].startsWith('P0') ? 'var(--red)' : 'var(--yellow)';
+    html += `<div style="background:#141724;border-left:3px solid ${sevColor};border-radius:5px;padding:10px 12px;font-size:11.5px">
+      <div style="display:flex;gap:8px;align-items:center;margin-bottom:4px">
+        <span style="background:${sevColor};color:#0e101c;font-weight:700;padding:1px 6px;border-radius:4px;font-size:10px">${a[1]}</span>
+        <span style="color:var(--muted)">${a[0]}</span>
+        <span style="color:var(--cyan);font-size:10.5px">${a[2]}</span>
+      </div>
+      <div style="color:#c0d4ee;font-weight:600;margin-bottom:2px">${a[3]} · <span style="color:var(--muted);font-weight:400">${a[4]}</span></div>
+      <div style="color:var(--muted);line-height:1.6">${a[5]}</div>
+    </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function renderAuxEvents() {
+  const el = document.getElementById('aux-events');
+  if (!el) return;
+  const dimIcon = {'model':'🧠','cloud':'☁️','chip':'💎','mg':'🏛','mg/cloud':'🏛☁️'};
+  let html = `<table style="width:100%;font-size:11px"><thead><tr>
+    <th style="text-align:left">日期/周</th><th>维度</th>
+    <th style="text-align:left">事件</th>
+    <th>score</th><th>nw</th><th>pw</th><th>有效分</th>
+    <th>信号类型</th><th>confidence</th></tr></thead><tbody>`;
+  AUX.events.forEach(e => {
+    const eff = +(e[4]*e[5]*(e[6]||1)).toFixed(2);
+    const clr = eff>0?'var(--green)':eff<0?'var(--red)':'var(--muted)';
+    html += `<tr>
+      <td class="prd">${e[0]}<br><span style="color:#64748b;font-size:9.5px">${e[1]}</span></td>
+      <td style="text-align:center">${dimIcon[e[3]]||'•'} <span style="color:var(--muted);font-size:10px">${e[3]}</span></td>
+      <td style="text-align:left;color:#c0d4ee">${e[2]}</td>
+      <td style="color:${e[4]>0?'var(--green)':'var(--red)'}">${e[4]>=0?'+':''}${e[4]}</td>
+      <td>${e[5]}</td><td>${e[6]||1}</td>
+      <td style="color:${clr};font-weight:700">${eff>=0?'+':''}${eff}</td>
+      <td style="color:var(--yellow);font-size:10px">${e[7]}</td>
+      <td style="color:var(--muted);font-size:10px">${e[8]}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  el.innerHTML = html;
+}
+
+function renderAuxQwen() {
+  const el = document.getElementById('aux-qwen');
+  if (!el) return;
+  let html = `<div style="display:flex;flex-direction:column;gap:9px">`;
+  AUX.qwen.forEach(q => {
+    html += `<div style="background:#141724;border:1px solid var(--border);border-left:3px solid var(--purple);border-radius:6px;padding:10px 12px;font-size:11px">
+      <div style="display:flex;gap:8px;align-items:baseline;margin-bottom:5px">
+        <span style="color:var(--purple);font-weight:700;font-size:12px">${q[0]}</span>
+        <span style="color:#c0d4ee;font-weight:600">${q[1]}</span>
+      </div>
+      <div style="color:var(--muted);font-size:10.5px;margin-bottom:3px">🥇 竞争Top3: <span style="color:#c0d4ee">${q[2]}</span></div>
+      <div style="color:#8899b4;font-size:10.5px">📝 ${q[3]}</div>
+    </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+function renderAuxCloud() {
+  const el = document.getElementById('aux-cloud');
+  if (!el) return;
+  let html = `<table style="width:100%;font-size:11px"><thead><tr>
+    <th style="text-align:left">日期/周</th><th>厂商</th><th>类型</th><th>对BABA</th>
+    <th style="text-align:left">详情</th></tr></thead><tbody>`;
+  AUX.cloud.forEach(c => {
+    const impactColor = c[4]==='正面' ? 'var(--green)' : c[4]==='负面' ? 'var(--red)' : 'var(--muted)';
+    html += `<tr>
+      <td class="prd">${c[0]}<br><span style="color:#64748b;font-size:9.5px">${c[1]}</span></td>
+      <td style="color:#c0d4ee;font-weight:600">${c[2]}</td>
+      <td style="color:var(--muted);font-size:10.5px">${c[3]}</td>
+      <td style="color:${impactColor};font-weight:700">${c[4]}</td>
+      <td style="text-align:left;color:#c0d4ee;font-size:10.5px">${c[5]}</td>
+    </tr>`;
+  });
+  html += `</tbody></table>`;
+  el.innerHTML = html;
+}
+
+function renderAuxScorecard() {
+  const el = document.getElementById('aux-scorecard');
+  if (!el) return;
+  // 从 radar 的 signal_type 统计
+  const sigGroups = {};
+  AUX.radar.forEach(r => {
+    const s = r[4];
+    if (!sigGroups[s]) sigGroups[s] = [];
+    sigGroups[s].push(r);
+  });
+  let html = `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">`;
+  const sigMeta = {
+    '公开发声': {c:'var(--cyan)', icon:'📢', w:'正面'},
+    '任命确认': {c:'var(--green)', icon:'✅', w:'正面'},
+    '架构调整': {c:'var(--yellow)', icon:'🔧', w:'中性'},
+    '正常':     {c:'#64748b',     icon:'•',  w:'中性'},
+    '数据缺失': {c:'var(--yellow)', icon:'⚠', w:'关注'},
+    'T+60观察': {c:'var(--red)',   icon:'🕒', w:'关注'}
+  };
+  Object.keys(sigGroups).forEach(s => {
+    const meta = sigMeta[s] || {c:'#64748b',icon:'•',w:'—'};
+    const people = sigGroups[s].map(r => r[0]).join('、');
+    html += `<div style="background:#141724;border:1px solid var(--border);border-left:3px solid ${meta.c};border-radius:6px;padding:10px;font-size:11px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px">
+        <span style="color:${meta.c};font-weight:700">${meta.icon} ${s}</span>
+        <span style="color:var(--muted);font-size:10px">${sigGroups[s].length}人 · ${meta.w}</span>
+      </div>
+      <div style="color:#c0d4ee;font-size:10.5px;line-height:1.55">${people}</div>
+    </div>`;
+  });
+  html += `</div>`;
+  el.innerHTML = html;
+}
+
+// 渲染所有辅助面板
+renderAuxRadar();
+renderAuxAlerts();
+renderAuxEvents();
+renderAuxQwen();
+renderAuxCloud();
+renderAuxScorecard();
+</script>
+</body>
+</html>
